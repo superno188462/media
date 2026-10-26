@@ -35,10 +35,13 @@ from content.video import (  # noqa: E402
     PlaywrightRenderer,
     RendererError,
     Storyboard,
-    compose,
+    compose_motion,
     extract_keyframes,
+    transition_boundaries,
+    layout,
     voice,
 )
+from content.video import motion as motion_tool  # noqa: E402
 
 #: 渲染中间产物不放 .local：实测 ffmpeg 子进程写不进去。
 DEFAULT_WORK_DIR = _HERE.parents[1] / ".runtime" / "video"
@@ -65,6 +68,8 @@ def main() -> int:
     parser.add_argument("--work-dir", default=str(DEFAULT_WORK_DIR))
     parser.add_argument("--keyframes", type=int, default=0, help="抽几张关键帧")
     parser.add_argument("--fps", type=int, default=30)
+    parser.add_argument("--transition-ms", type=int, default=motion_tool.DEFAULT_TRANSITION_MS,
+                        help="转场时长；0 表示无转场（硬切）")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -115,6 +120,10 @@ def main() -> int:
                 gap_ms=args.gap_ms,
             )
             holds = [v.hold_ms for v in voices]
+            # 把配音推出的时长写回分镜，供后续 card_reveal 展开按时长均分。
+            # 必须先配音后展开：否则同一句话会被拆成多段重复合成。
+            for scene, hold in zip(storyboard.scenes, holds):
+                scene.hold_ms = hold
             audio_path = voice.build_track(
                 voices, work_dir / "voice" / "track.mp3",
                 gap_ms=args.gap_ms, work_dir=work_dir / "voice",
@@ -129,12 +138,24 @@ def main() -> int:
         except voice.tts_tool.TtsError as exc:
             return fail("TTS_FAILED", str(exc), "检查 VOLC_API_KEY 与音色名")
 
-    if any(h <= 0 for h in holds):
+    if any(s.hold_ms <= 0 for s in storyboard.scenes):
         return fail(
             "STORYBOARD_INVALID",
             "有镜头时长为 0 且没有配音可推算",
             "给这些镜头写 hold_ms，或开启 --tts",
         )
+
+    # 卡片逐条出现：一屏拆多屏，总时长不变
+    storyboard = layout.expand_card_reveal(storyboard)
+    notes = layout.audit(storyboard)
+
+    holds = [s.hold_ms for s in storyboard.scenes]
+    motions = [layout.resolve_motion(s) for s in storyboard.scenes]
+
+    # 转场：所有屏都写 none 时退化为硬切
+    transition_ms = args.transition_ms
+    if storyboard.scenes and all(layout.resolve_transition(s) == "none" for s in storyboard.scenes):
+        transition_ms = 0
 
     try:
         with PlaywrightRenderer() as renderer:
@@ -145,18 +166,21 @@ def main() -> int:
         return fail("INTERNAL_ERROR", f"{type(exc).__name__}: {exc}")
 
     try:
-        result = compose(
-            frames, holds, Path(args.out),
-            audio=audio_path, fps=args.fps, work_dir=work_dir,
+        result = compose_motion(
+            frames, holds, Path(args.out), motions,
+            audio=audio_path, fps=args.fps, transition_ms=transition_ms,
+            size=(storyboard.width, storyboard.height),
         )
-    except ComposeError as exc:
+    except (ComposeError, motion_tool.MotionError) as exc:
         return fail("COMPOSE_FAILED", str(exc))
 
     keyframes: list[str] = []
     if args.keyframes > 0:
         try:
+            avoid = transition_boundaries(holds, transition_ms)
             keyframes = [
-                str(p) for p in extract_keyframes(result.path, args.keyframes, work_dir / "keyframes")
+                str(p) for p in extract_keyframes(
+                    result.path, args.keyframes, work_dir / "keyframes", avoid_ms=avoid)
             ]
         except ComposeError as exc:
             return fail("KEYFRAME_FAILED", str(exc))
@@ -172,6 +196,10 @@ def main() -> int:
             "fps": result.fps,
             "has_audio": result.has_audio,
             "holds": holds,
+            "motions": motions,
+            "layouts": [s.layout for s in storyboard.scenes],
+            "transition_ms": transition_ms,
+            "design_notes": notes,
             "voices": voices_info,
             "keyframes": keyframes,
         },

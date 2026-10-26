@@ -1,10 +1,12 @@
 """把静帧序列 + 音轨合成 mp4。
 
-用 ffmpeg 的 concat 分离器：每张图配一个 ``duration``，
-比给每张图单独跑一次 ``-loop 1 -t`` 快得多，也更省内存。
+两条路径：
+
+- ``compose_motion``：逐场 zoompan 运镜 + xfade 转场（**生产默认**）。
+  用 zoompan 显式指定每段帧数，时长精确，不依赖 concat 的 duration 语义。
+- ``compose``：旧的 concat 分离器路径，保留作对照与回归。
 
 帧率固定 30，编码 H.264 + yuv420p（B站接受度高）。
-因为画面基本是静帧，``-tune stillimage`` 能让码率更省。
 """
 
 from __future__ import annotations
@@ -13,6 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .. import ffmpeg as ffmpeg_tool
+from . import motion as M
 
 DEFAULT_FPS = 30
 DEFAULT_CRF = 20
@@ -53,6 +56,81 @@ def _write_concat(frames: list[Path], holds_ms: list[int], target: Path,
     lines.append(f"file '{frames[-1].as_posix()}'")
     lines.append(f"duration {1 / fps:.4f}")
     target.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def compose_motion(
+    frames: list[Path],
+    holds_ms: list[int],
+    out_path: Path,
+    motions: list[str],
+    *,
+    audio: Path | None = None,
+    fps: int = DEFAULT_FPS,
+    crf: int = DEFAULT_CRF,
+    transition_ms: int = M.DEFAULT_TRANSITION_MS,
+    size: tuple[int, int] | None = None,
+) -> ComposeResult:
+    """逐场运镜 + 转场合成。生产路径。
+
+    时长由 zoompan 的帧数决定，所以总时长精确等于 ``sum(holds_ms)``。
+    """
+    if not frames:
+        raise M.MotionError("没有可合成的帧")
+    if len(frames) != len(holds_ms) or len(holds_ms) != len(motions):
+        raise M.MotionError("帧数、时长、运镜三者数量不一致")
+    for frame in frames:
+        if not frame.is_file():
+            raise M.MotionError(f"帧文件不存在：{frame}")
+
+    if size is None:
+        info = ffmpeg_tool.probe(frames[0])
+        size = (info.get("width") or 1920, info.get("height") or 1080)
+    width, height = size
+
+    segments = M.plan_segments(holds_ms, motions, transition_ms)
+    filter_complex, out_label = M.build_filter(segments, width, height, fps, transition_ms)
+
+    args: list[str] = []
+    for frame in frames:
+        args += ["-i", str(frame)]
+    if audio is not None:
+        if not audio.is_file():
+            raise M.MotionError(f"音轨不存在：{audio}")
+        args += ["-i", str(audio)]
+
+    args += ["-filter_complex", filter_complex, "-map", f"[{out_label}]"]
+    if audio is not None:
+        args += ["-map", f"{len(frames)}:a"]
+
+    total_seconds = sum(holds_ms) / 1000
+    args += [
+        "-t", f"{total_seconds:.3f}",
+        "-c:v", "libx264",
+        "-preset", "medium",
+        "-crf", str(crf),
+        "-tune", "stillimage",
+        "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart",
+    ]
+    if audio is not None:
+        args += ["-c:a", "aac", "-b:a", "128k"]
+    args.append(str(out_path))
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    result = ffmpeg_tool.run(args, timeout=1800)
+    if result.returncode != 0 or not out_path.is_file():
+        tail = (result.stderr or "")[-800:]
+        raise M.MotionError(f"ffmpeg 运镜合成失败：{tail}")
+
+    probe = ffmpeg_tool.probe(out_path)
+    return ComposeResult(
+        path=out_path,
+        duration_ms=probe.get("duration_ms") or sum(holds_ms),
+        frames=len(frames),
+        fps=fps,
+        has_audio=bool(probe.get("has_audio")),
+        bytes=out_path.stat().st_size,
+    )
 
 
 def compose(
@@ -142,16 +220,45 @@ def extract_frame(video: Path, at_ms: int, out_path: Path) -> Path:
     return out_path
 
 
-def extract_keyframes(video: Path, count: int, out_dir: Path) -> list[Path]:
-    """均匀抽若干帧，供审核时预览画面（飞书卡片不能播放视频）。"""
+def transition_boundaries(holds_ms: list[int], transition_ms: int) -> list[int]:
+    """返回每处转场的中点（毫秒），用于抽帧时避开。"""
+    if transition_ms <= 0:
+        return []
+    boundaries: list[int] = []
+    accumulated = 0
+    for hold in holds_ms[:-1]:
+        accumulated += hold
+        boundaries.append(accumulated)
+    return boundaries
+
+
+def extract_keyframes(
+    video: Path,
+    count: int,
+    out_dir: Path,
+    avoid_ms: list[int] | None = None,
+    guard_ms: int = 450,
+) -> list[Path]:
+    """均匀抽若干帧，供审核时预览画面（飞书卡片不能播放视频）。
+
+    ``avoid_ms`` 是转场边界：落在边界附近的采样点会顺延，
+    否则抽到的会是两屏交叉淡化的中间帧，看起来像花屏。
+    """
     info = ffmpeg_tool.probe(video)
     duration = info.get("duration_ms")
     if not duration:
         raise ComposeError("读不到视频时长，无法均匀抽帧")
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    avoid = sorted(avoid_ms or [])
     paths: list[Path] = []
     for index in range(count):
         at_ms = int(duration * (index + 0.5) / count)
+        for boundary in avoid:
+            if abs(at_ms - boundary) < guard_ms:
+                at_ms = boundary + guard_ms
+                break
+        at_ms = max(0, min(at_ms, duration - 100))
         target = out_dir / f"keyframe_{index + 1:02d}.jpg"
         paths.append(extract_frame(video, at_ms, target))
     return paths

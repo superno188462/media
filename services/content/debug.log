@@ -406,3 +406,148 @@
 [1026/224530.626:INFO:CONSOLE:3] "--playwright--set--content--5049c76f965994e49ca4aae902e23b82--", source:  (3)
 [1026/224530.809:INFO:CONSOLE:3] "--playwright--set--content--699a5eae086fdce40eaef97b92833af9--", source:  (3)
 [1026/224532.570:WARNING:components\leveldb_proto\internal\leveldb_database.cc:102] Unable to open C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-Knb63X\Default\PersistentOriginTrials: IO error: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-Knb63X\Default\PersistentOriginTrials/LOCK: File not found. (ChromeMethodBFE: 15::LockFile::4)
+[62340:51324:1026/231729.053:WARNING:kernel_parameter_setter.cc(150)] [KernelParameterSetter] NotifyDoublePinyinSchemeChanged failed, scheme=Sogou status=1
+[62340:51324:1026/231729.053:WARNING:t_skinfilemap.cpp(56)] SGRenderLog:CheckUpdate newMem.OpenMem failed, szNewMem:Local\sgime_skin.v4.filemap.sogouime err:系统错误2: 系统找不到指定的文件。  
+打开Filemap失败: Local\sgime_skin.v4.filemap.sogouime55357849607
+[62340:51324:1026/231729.053:WARNING:t_skinfilemap.cpp(65)] SGRenderLog:CheckUpdate finish: old version:1
+[62340:51324:1026/231729.053:WARNING:t_skinfilemap.cpp(67)] SGRenderLog:CheckUpdate finish: new version:4
+[62340:51324:1026/231729.072:WARNING:t_skinfilemap.cpp(63)] SGRenderLog:CheckUpdate newMem.OpenMem Suc, szNewMem:Local\sgime_skin.Dpi144.v4.filemap.sogouime
+[62340:51324:1026/231729.072:WARNING:t_skinfilemap.cpp(65)] SGRenderLog:CheckUpdate finish: old version:4
+[62340:51324:1026/231729.072:WARNING:t_skinfilemap.cpp(67)] SGRenderLog:CheckUpdate finish: new version:4
+[1026/231729.084:ERROR:content\browser\network_sandbox.cc:514] Failed to create network context data directory C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-htBgDp\Default\Network: 拒绝访问。 (0x5)
+[1026/231729.084:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-htBgDp\Default\Code Cache\js
+[1026/231729.084:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-htBgDp\Default\Code Cache\wasm
+[1026/231729.084:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-htBgDp\Default\Code Cache\js
+[1026/231729.084:ERROR:net\disk_cache\simple\simple_backend_impl.cc:749] Simple Cache Backend: wrong file structure on disk: 1 path: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-htBgDp\Default\Code Cache\js
+[1026/231729.084:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-htBgDp\Default\Code Cache\wasm
+[1026/231729.084:ERROR:net\disk_cache\simple\simple_backend_impl.cc:749] Simple Cache Backend: wrong file structure on disk: 1 path: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-htBgDp\Default\Code Cache\wasm
+[1026/231729.084:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: 系统找不到指定的路径。 (0x3)
+[1026/231729.084:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: 系统找不到指定的路径。 (0x3)
+[1026/231729.084:ERROR:net\disk_cache\disk_cache.cc:293] Unable to create cache
+[1026/231729.084:ERROR:net\disk_cache\disk_cache.cc:293] Unable to create cache
+[1026/231729.086:ERROR:content\browser\network_sandbox_grant_result_helper.cc:108] Encountered error while migrating network context data or granting sandbox access for C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-htBgDp\Default\Network. Result: 2: 操作成功完成。 (0x0)
+[1026/231729.165:INFO:CONSOLE:3] "--playwright--set--content--ec1604eb21f1ea4cc9cc8db0622f40e0--", source:  (3)
+[1026/231729.444:INFO:CONSOLE:3] "--playwright--set--content--0d16bbdfbc3a68f562ce85d9f6b57706--", source:  (3)
+[1026/231729.697:INFO:CONSOLE:3] "--playwright--set--content--5c06204ab8a59c5c9f9d56d2c9b856b2--", source:  (3)
+[1026/231729.923:INFO:CONSOLE:3] "--playwright--set--content--6980bbe0cddc055542923954a975cc5a--", source:  (3)
+[1026/231730.077:INFO:CONSOLE:3] "--playwright--set--content--625e5f55688b780aeb6f38531fe2a05e--", source:  (3)
+[1026/231730.248:INFO:CONSOLE:3] "--playwright--set--content--cd427ed6e2010dc2ed31fd52785b0600--", source:  (3)
+[1026/231730.427:INFO:CONSOLE:3] "--playwright--set--content--fcfb31a8cf79cf3d0329231df023f184--", source:  (3)
+[1026/231730.546:INFO:CONSOLE:3] "--playwright--set--content--802974aef056b84e49e1154f14420fbd--", source:  (3)
+[1026/231732.104:WARNING:components\leveldb_proto\internal\leveldb_database.cc:102] Unable to open C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-htBgDp\Default\PersistentOriginTrials: IO error: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-htBgDp\Default\PersistentOriginTrials/LOCK: File not found. (ChromeMethodBFE: 15::LockFile::4)
+[46464:41652:1026/231821.502:WARNING:kernel_parameter_setter.cc(150)] [KernelParameterSetter] NotifyDoublePinyinSchemeChanged failed, scheme=Sogou status=1
+[46464:41652:1026/231821.503:WARNING:t_skinfilemap.cpp(56)] SGRenderLog:CheckUpdate newMem.OpenMem failed, szNewMem:Local\sgime_skin.v4.filemap.sogouime err:系统错误2: 系统找不到指定的文件。  
+打开Filemap失败: Local\sgime_skin.v4.filemap.sogouime55357849607
+[46464:41652:1026/231821.503:WARNING:t_skinfilemap.cpp(65)] SGRenderLog:CheckUpdate finish: old version:1
+[46464:41652:1026/231821.503:WARNING:t_skinfilemap.cpp(67)] SGRenderLog:CheckUpdate finish: new version:4
+[46464:41652:1026/231821.519:WARNING:t_skinfilemap.cpp(63)] SGRenderLog:CheckUpdate newMem.OpenMem Suc, szNewMem:Local\sgime_skin.Dpi144.v4.filemap.sogouime
+[46464:41652:1026/231821.519:WARNING:t_skinfilemap.cpp(65)] SGRenderLog:CheckUpdate finish: old version:4
+[46464:41652:1026/231821.519:WARNING:t_skinfilemap.cpp(67)] SGRenderLog:CheckUpdate finish: new version:4
+[1026/231821.530:ERROR:content\browser\network_sandbox.cc:514] Failed to create network context data directory C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2awGhN\Default\Network: 拒绝访问。 (0x5)
+[1026/231821.530:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2awGhN\Default\Code Cache\wasm
+[1026/231821.530:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2awGhN\Default\Code Cache\js
+[1026/231821.530:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2awGhN\Default\Code Cache\wasm
+[1026/231821.530:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2awGhN\Default\Code Cache\js
+[1026/231821.530:ERROR:net\disk_cache\simple\simple_backend_impl.cc:749] Simple Cache Backend: wrong file structure on disk: 1 path: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2awGhN\Default\Code Cache\wasm
+[1026/231821.530:ERROR:net\disk_cache\simple\simple_backend_impl.cc:749] Simple Cache Backend: wrong file structure on disk: 1 path: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2awGhN\Default\Code Cache\js
+[1026/231821.530:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: 系统找不到指定的路径。 (0x3)
+[1026/231821.531:ERROR:net\disk_cache\disk_cache.cc:293] Unable to create cache
+[1026/231821.531:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: 系统找不到指定的路径。 (0x3)
+[1026/231821.531:ERROR:net\disk_cache\disk_cache.cc:293] Unable to create cache
+[1026/231821.532:ERROR:content\browser\network_sandbox_grant_result_helper.cc:108] Encountered error while migrating network context data or granting sandbox access for C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2awGhN\Default\Network. Result: 2: 操作成功完成。 (0x0)
+[1026/231821.608:INFO:CONSOLE:3] "--playwright--set--content--ed86b8316c13eb9a68e03c02b1a2049b--", source:  (3)
+[1026/231821.840:INFO:CONSOLE:3] "--playwright--set--content--7e0feb64eabaa449d3a1e2bf55cb8325--", source:  (3)
+[1026/231822.076:INFO:CONSOLE:3] "--playwright--set--content--dea4447b88c4df8d43011e86c0efd663--", source:  (3)
+[1026/231822.286:INFO:CONSOLE:3] "--playwright--set--content--f969ed857f056410098265b799e6e08b--", source:  (3)
+[1026/231822.437:INFO:CONSOLE:3] "--playwright--set--content--4e285b124d8db9bbb65b0126bbe69948--", source:  (3)
+[1026/231822.611:INFO:CONSOLE:3] "--playwright--set--content--c5e31a1cf0137553103d99f1529f960b--", source:  (3)
+[1026/231822.769:INFO:CONSOLE:3] "--playwright--set--content--be95f93eae5fafcf38d3615f12b9207a--", source:  (3)
+[1026/231822.891:INFO:CONSOLE:3] "--playwright--set--content--af03354222c29d983d97d9cda8969225--", source:  (3)
+[1026/231824.569:WARNING:components\leveldb_proto\internal\leveldb_database.cc:102] Unable to open C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2awGhN\Default\PersistentOriginTrials: IO error: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2awGhN\Default\PersistentOriginTrials/LOCK: File not found. (ChromeMethodBFE: 15::LockFile::4)
+[67500:63680:1026/231921.928:WARNING:kernel_parameter_setter.cc(150)] [KernelParameterSetter] NotifyDoublePinyinSchemeChanged failed, scheme=Sogou status=1
+[67500:63680:1026/231921.929:WARNING:t_skinfilemap.cpp(56)] SGRenderLog:CheckUpdate newMem.OpenMem failed, szNewMem:Local\sgime_skin.v4.filemap.sogouime err:系统错误2: 系统找不到指定的文件。  
+打开Filemap失败: Local\sgime_skin.v4.filemap.sogouime55357849607
+[67500:63680:1026/231921.929:WARNING:t_skinfilemap.cpp(65)] SGRenderLog:CheckUpdate finish: old version:1
+[67500:63680:1026/231921.929:WARNING:t_skinfilemap.cpp(67)] SGRenderLog:CheckUpdate finish: new version:4
+[67500:63680:1026/231921.944:WARNING:t_skinfilemap.cpp(63)] SGRenderLog:CheckUpdate newMem.OpenMem Suc, szNewMem:Local\sgime_skin.Dpi144.v4.filemap.sogouime
+[67500:63680:1026/231921.944:WARNING:t_skinfilemap.cpp(65)] SGRenderLog:CheckUpdate finish: old version:4
+[67500:63680:1026/231921.944:WARNING:t_skinfilemap.cpp(67)] SGRenderLog:CheckUpdate finish: new version:4
+[1026/231921.956:ERROR:content\browser\network_sandbox.cc:514] Failed to create network context data directory C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2fS4sC\Default\Network: 拒绝访问。 (0x5)
+[1026/231921.956:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2fS4sC\Default\Code Cache\js
+[1026/231921.956:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2fS4sC\Default\Code Cache\wasm
+[1026/231921.956:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2fS4sC\Default\Code Cache\js
+[1026/231921.956:ERROR:net\disk_cache\simple\simple_backend_impl.cc:749] Simple Cache Backend: wrong file structure on disk: 1 path: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2fS4sC\Default\Code Cache\js
+[1026/231921.957:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2fS4sC\Default\Code Cache\wasm
+[1026/231921.957:ERROR:net\disk_cache\simple\simple_backend_impl.cc:749] Simple Cache Backend: wrong file structure on disk: 1 path: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2fS4sC\Default\Code Cache\wasm
+[1026/231921.957:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: 系统找不到指定的路径。 (0x3)
+[1026/231921.957:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: 系统找不到指定的路径。 (0x3)
+[1026/231921.957:ERROR:net\disk_cache\disk_cache.cc:293] Unable to create cache
+[1026/231921.957:ERROR:net\disk_cache\disk_cache.cc:293] Unable to create cache
+[1026/231921.958:ERROR:content\browser\network_sandbox_grant_result_helper.cc:108] Encountered error while migrating network context data or granting sandbox access for C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2fS4sC\Default\Network. Result: 2: 操作成功完成。 (0x0)
+[1026/231922.037:INFO:CONSOLE:3] "--playwright--set--content--8e612c1e9567f1cf75680548a3540ae7--", source:  (3)
+[1026/231922.266:INFO:CONSOLE:3] "--playwright--set--content--aa6abc425d0436627f31d7e2f8ab0491--", source:  (3)
+[1026/231922.503:INFO:CONSOLE:3] "--playwright--set--content--50cc8258d77a10e5c2777abfd48ff2f9--", source:  (3)
+[1026/231922.715:INFO:CONSOLE:3] "--playwright--set--content--52ba1fe158184fb8e4cfadbcb7290d0d--", source:  (3)
+[1026/231922.863:INFO:CONSOLE:3] "--playwright--set--content--00f8dd6cfdb83b9a82601fce1d525c3f--", source:  (3)
+[1026/231923.033:INFO:CONSOLE:3] "--playwright--set--content--2fa24127255bfa4f2884eed33b95f7f6--", source:  (3)
+[1026/231923.201:INFO:CONSOLE:3] "--playwright--set--content--6474a2fb8d5a18cb6eba44dd3c1fd58f--", source:  (3)
+[1026/231923.318:INFO:CONSOLE:3] "--playwright--set--content--bd6c9057fae7a1d15f0ad3843b917fb8--", source:  (3)
+[1026/231924.977:WARNING:components\leveldb_proto\internal\leveldb_database.cc:102] Unable to open C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2fS4sC\Default\PersistentOriginTrials: IO error: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-2fS4sC\Default\PersistentOriginTrials/LOCK: File not found. (ChromeMethodBFE: 15::LockFile::4)
+[52200:43332:1026/232017.921:WARNING:kernel_parameter_setter.cc(150)] [KernelParameterSetter] NotifyDoublePinyinSchemeChanged failed, scheme=Sogou status=1
+[52200:43332:1026/232017.921:WARNING:t_skinfilemap.cpp(56)] SGRenderLog:CheckUpdate newMem.OpenMem failed, szNewMem:Local\sgime_skin.v4.filemap.sogouime err:系统错误2: 系统找不到指定的文件。  
+打开Filemap失败: Local\sgime_skin.v4.filemap.sogouime55357849607
+[52200:43332:1026/232017.921:WARNING:t_skinfilemap.cpp(65)] SGRenderLog:CheckUpdate finish: old version:1
+[52200:43332:1026/232017.921:WARNING:t_skinfilemap.cpp(67)] SGRenderLog:CheckUpdate finish: new version:4
+[52200:43332:1026/232017.937:WARNING:t_skinfilemap.cpp(63)] SGRenderLog:CheckUpdate newMem.OpenMem Suc, szNewMem:Local\sgime_skin.Dpi144.v4.filemap.sogouime
+[52200:43332:1026/232017.937:WARNING:t_skinfilemap.cpp(65)] SGRenderLog:CheckUpdate finish: old version:4
+[52200:43332:1026/232017.937:WARNING:t_skinfilemap.cpp(67)] SGRenderLog:CheckUpdate finish: new version:4
+[1026/232017.949:ERROR:content\browser\network_sandbox.cc:514] Failed to create network context data directory C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-J37wXc\Default\Network: 拒绝访问。 (0x5)
+[1026/232017.950:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-J37wXc\Default\Code Cache\js
+[1026/232017.950:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-J37wXc\Default\Code Cache\wasm
+[1026/232017.950:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-J37wXc\Default\Code Cache\js
+[1026/232017.950:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-J37wXc\Default\Code Cache\wasm
+[1026/232017.950:ERROR:net\disk_cache\simple\simple_backend_impl.cc:749] Simple Cache Backend: wrong file structure on disk: 1 path: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-J37wXc\Default\Code Cache\js
+[1026/232017.950:ERROR:net\disk_cache\simple\simple_backend_impl.cc:749] Simple Cache Backend: wrong file structure on disk: 1 path: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-J37wXc\Default\Code Cache\wasm
+[1026/232017.950:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: 系统找不到指定的路径。 (0x3)
+[1026/232017.950:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: 系统找不到指定的路径。 (0x3)
+[1026/232017.950:ERROR:net\disk_cache\disk_cache.cc:293] Unable to create cache
+[1026/232017.950:ERROR:net\disk_cache\disk_cache.cc:293] Unable to create cache
+[1026/232017.951:ERROR:content\browser\network_sandbox_grant_result_helper.cc:108] Encountered error while migrating network context data or granting sandbox access for C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-J37wXc\Default\Network. Result: 2: 操作成功完成。 (0x0)
+[1026/232018.026:INFO:CONSOLE:3] "--playwright--set--content--e00dc48f1af6082f0dae23bd5bfd4a23--", source:  (3)
+[1026/232018.262:INFO:CONSOLE:3] "--playwright--set--content--68797132e77697ce69e98c3639b3fac0--", source:  (3)
+[1026/232018.498:INFO:CONSOLE:3] "--playwright--set--content--400c87ddaa80278a8759faf880b8ffd0--", source:  (3)
+[1026/232018.711:INFO:CONSOLE:3] "--playwright--set--content--62b94cfb66b872a988ccddb9d6cf3b10--", source:  (3)
+[1026/232018.861:INFO:CONSOLE:3] "--playwright--set--content--966dcb64c7010daab1b5ddc74327dac3--", source:  (3)
+[1026/232019.039:INFO:CONSOLE:3] "--playwright--set--content--aac9de162d851df2f622a167595c0552--", source:  (3)
+[1026/232019.215:INFO:CONSOLE:3] "--playwright--set--content--4b4f0df0f019b5e7159e5069373a1729--", source:  (3)
+[1026/232019.331:INFO:CONSOLE:3] "--playwright--set--content--1f3cdddcd2ed09f82a1e218e6591ddb9--", source:  (3)
+[1026/232020.984:WARNING:components\leveldb_proto\internal\leveldb_database.cc:102] Unable to open C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-J37wXc\Default\PersistentOriginTrials: IO error: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-J37wXc\Default\PersistentOriginTrials/LOCK: File not found. (ChromeMethodBFE: 15::LockFile::4)
+[62596:63192:1026/232121.206:WARNING:kernel_parameter_setter.cc(150)] [KernelParameterSetter] NotifyDoublePinyinSchemeChanged failed, scheme=Sogou status=1
+[62596:63192:1026/232121.206:WARNING:t_skinfilemap.cpp(56)] SGRenderLog:CheckUpdate newMem.OpenMem failed, szNewMem:Local\sgime_skin.v4.filemap.sogouime err:系统错误2: 系统找不到指定的文件。  
+打开Filemap失败: Local\sgime_skin.v4.filemap.sogouime55357849607
+[62596:63192:1026/232121.206:WARNING:t_skinfilemap.cpp(65)] SGRenderLog:CheckUpdate finish: old version:1
+[62596:63192:1026/232121.206:WARNING:t_skinfilemap.cpp(67)] SGRenderLog:CheckUpdate finish: new version:4
+[62596:63192:1026/232121.224:WARNING:t_skinfilemap.cpp(63)] SGRenderLog:CheckUpdate newMem.OpenMem Suc, szNewMem:Local\sgime_skin.Dpi144.v4.filemap.sogouime
+[62596:63192:1026/232121.224:WARNING:t_skinfilemap.cpp(65)] SGRenderLog:CheckUpdate finish: old version:4
+[62596:63192:1026/232121.224:WARNING:t_skinfilemap.cpp(67)] SGRenderLog:CheckUpdate finish: new version:4
+[1026/232121.236:ERROR:content\browser\network_sandbox.cc:514] Failed to create network context data directory C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-Q7JE9p\Default\Network: 拒绝访问。 (0x5)
+[1026/232121.236:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-Q7JE9p\Default\Code Cache\js
+[1026/232121.236:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-Q7JE9p\Default\Code Cache\wasm
+[1026/232121.237:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-Q7JE9p\Default\Code Cache\js
+[1026/232121.237:ERROR:net\disk_cache\simple\simple_backend_impl.cc:749] Simple Cache Backend: wrong file structure on disk: 1 path: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-Q7JE9p\Default\Code Cache\js
+[1026/232121.237:ERROR:net\disk_cache\simple\simple_backend_impl.cc:81] Failed to create directory: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-Q7JE9p\Default\Code Cache\wasm
+[1026/232121.237:ERROR:net\disk_cache\simple\simple_backend_impl.cc:749] Simple Cache Backend: wrong file structure on disk: 1 path: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-Q7JE9p\Default\Code Cache\wasm
+[1026/232121.237:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: 系统找不到指定的路径。 (0x3)
+[1026/232121.237:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: 系统找不到指定的路径。 (0x3)
+[1026/232121.237:ERROR:net\disk_cache\disk_cache.cc:293] Unable to create cache
+[1026/232121.237:ERROR:net\disk_cache\disk_cache.cc:293] Unable to create cache
+[1026/232121.238:ERROR:content\browser\network_sandbox_grant_result_helper.cc:108] Encountered error while migrating network context data or granting sandbox access for C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-Q7JE9p\Default\Network. Result: 2: 操作成功完成。 (0x0)
+[1026/232121.316:INFO:CONSOLE:3] "--playwright--set--content--be0797d029bac8fb38780950a8080e1a--", source:  (3)
+[1026/232121.544:INFO:CONSOLE:3] "--playwright--set--content--2c41ba97e7b475261a2e373112453b81--", source:  (3)
+[1026/232121.794:INFO:CONSOLE:3] "--playwright--set--content--5d2a801fa350ed135cb17f4cc0116f90--", source:  (3)
+[1026/232122.007:INFO:CONSOLE:3] "--playwright--set--content--1cdcd8e19ae92030a3d7ff7af4215c94--", source:  (3)
+[1026/232122.175:INFO:CONSOLE:3] "--playwright--set--content--696cc15f2ccc36c42122c889b481bd61--", source:  (3)
+[1026/232122.349:INFO:CONSOLE:3] "--playwright--set--content--1588856117ecb9c7a2f678db427168cd--", source:  (3)
+[1026/232122.511:INFO:CONSOLE:3] "--playwright--set--content--195507799daaa5b07213749c6345f53e--", source:  (3)
+[1026/232122.628:INFO:CONSOLE:3] "--playwright--set--content--93bdb0344eb8c112e7bf6c435a6154e1--", source:  (3)
+[1026/232124.264:WARNING:components\leveldb_proto\internal\leveldb_database.cc:102] Unable to open C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-Q7JE9p\Default\PersistentOriginTrials: IO error: C:\Users\JZK\AppData\Local\Temp\playwright_chromiumdev_profile-Q7JE9p\Default\PersistentOriginTrials/LOCK: File not found. (ChromeMethodBFE: 15::LockFile::4)

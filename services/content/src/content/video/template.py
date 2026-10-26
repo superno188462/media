@@ -19,7 +19,7 @@ import base64
 import html
 from pathlib import Path
 
-from .scenes import Card, Scene, Storyboard
+from .scenes import LAYOUT_CLOSEUP, LAYOUT_HEADLINE, Card, Scene, Storyboard
 
 FONT_STACK = (
     '"Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", '
@@ -57,7 +57,9 @@ body {
   background: linear-gradient(180deg, rgba(4,14,32,.0), #04091a 70%);
 }
 
-.topbar { position: absolute; top: 34px; left: 48px; right: 48px;
+/* 左右留 96px 安全边距：运镜最多平移/裁掉约 74px，
+   边距不够会把角标和声明切掉（实测过）。 */
+.topbar { position: absolute; top: 44px; left: 96px; right: 96px;
   display: flex; align-items: center; justify-content: space-between; }
 .left-top { display: flex; align-items: center; gap: 16px; }
 .badge { background: #fff; color: #10254d; font-weight: 800; font-size: 30px;
@@ -122,6 +124,48 @@ body {
   padding-right: 720px; }
 .outro .big { font-size: 76px; font-weight: 900; letter-spacing: 2px; }
 .outro .small { font-size: 34px; color: #b9d3f5; }
+
+/* ---------- 版式（VP-DATA-02） ---------- */
+body.layout-headline .card,
+body.layout-headline .char,
+/* title_block 的内容被 headline-text 复用，原块必须隐藏，否则文字重叠 */
+body.layout-headline .title-block { display: none; }
+body.layout-headline .caption { display: none; }
+
+.headline-text {
+  position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+  padding: 0 160px; text-align: center;
+  font-size: 96px; font-weight: 900; line-height: 1.28;
+  text-shadow: 0 14px 40px rgba(0, 15, 45, .65);
+  text-wrap: balance;
+}
+.headline-text .hl-mark { color: #8fc4ff; }
+
+body.layout-closeup .card { display: none; }
+body.layout-closeup .caption { display: none; }
+body.layout-closeup .char {
+  right: 0; bottom: 0; height: 940px;
+}
+.closeup-line {
+  position: absolute; left: 110px; top: 50%; transform: translateY(-50%);
+  width: 780px;
+  font-size: 66px; font-weight: 800; line-height: 1.35;
+  text-shadow: 0 10px 30px rgba(0, 15, 45, .6);
+  text-wrap: balance;
+}
+.closeup-line .accent-bar {
+  width: 96px; height: 10px; border-radius: 6px;
+  background: #4d8ef0; margin-bottom: 28px;
+}
+
+body.layout-center_card .char,
+body.layout-center_card .title-block { display: none; }
+body.layout-center_card .card {
+  left: 50%; transform: translateX(-50%); top: 200px; width: 1000px;
+}
+
+/* 逐条出现时未到时机的行：占位但透明，卡片高度不变 */
+.line.hidden { opacity: 0; }
 """
 
 
@@ -155,16 +199,18 @@ def _beams() -> str:
     )
 
 
-def _card_html(card: Card) -> str:
+def _card_html(card: Card, hidden_from: int | None = None) -> str:
+    """``hidden_from`` 之后的行走隐藏占位，用于逐条出现。"""
     icon = f"<span>{html.escape(card.icon)}</span>" if card.icon else ""
     title = f'<div class="card-title">{icon}{html.escape(card.title)}</div>'
 
     rows = []
-    for line in card.lines:
+    for position, line in enumerate(card.lines):
         index = html.escape(line.index) if line.index else ""
         sub = f'<div class="sub">{html.escape(line.sub)}</div>' if line.sub else ""
+        hidden = hidden_from is not None and position >= hidden_from
         rows.append(
-            f'<div class="line {html.escape(line.state)}">'
+            f'<div class="line {html.escape(line.state)}{" hidden" if hidden else ""}">'
             f'<div class="idx">{index}</div>'
             f'<div><div class="txt">{html.escape(line.text)}</div>{sub}</div>'
             f"</div>"
@@ -213,8 +259,10 @@ def render_html(storyboard: Storyboard, scene: Scene) -> str:
         topbar,
     ]
 
+    layout = scene.layout
+
     if scene.card is not None:
-        parts.append(_card_html(scene.card))
+        parts.append(_card_html(scene.card, hidden_from=scene.visible_lines))
 
     if scene.title_block:
         parts.append(_title_block_html(scene.title_block))
@@ -226,17 +274,36 @@ def render_html(storyboard: Storyboard, scene: Scene) -> str:
                 f'<div class="char"><img src="{_data_uri(asset)}" alt=""></div>'
             )
 
-    if scene.outro:
+    # 版式专属内容
+    if layout == LAYOUT_HEADLINE:
+        main = ""
+        if scene.title_block:
+            main = "<br>".join(
+                html.escape(str(scene.title_block.get(key, "")))
+                for key in ("title", "main", "sub")
+                if scene.title_block.get(key)
+            )
+        main = main or html.escape(scene.caption)
+        if main:
+            parts.append(f'<div class="headline-text">{main}</div>')
+    elif layout == LAYOUT_CLOSEUP:
+        if scene.caption:
+            parts.append(
+                '<div class="closeup-line"><div class="accent-bar"></div>'
+                f"{html.escape(scene.caption)}</div>"
+            )
+    elif scene.outro:
         sub = html.escape(scene.outro_sub)
         parts.append(
             f'<div class="outro"><div class="big">{html.escape(scene.outro)}</div>'
             f'<div class="small">{sub}</div></div>'
         )
-    elif scene.caption:
+    elif scene.caption and layout != LAYOUT_HEADLINE:
         parts.append(f'<div class="caption">{html.escape(scene.caption)}</div>')
 
     body = "".join(parts)
     return (
         f"<!doctype html><html><head><meta charset='utf-8'>"
-        f"<style>{css}</style></head><body>{body}</body></html>"
+        f"<style>{css}</style></head>"
+        f"<body class='layout-{html.escape(layout)}'>{body}</body></html>"
     )

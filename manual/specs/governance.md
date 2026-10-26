@@ -181,10 +181,11 @@
   该指示构成对本契约变更的确认；Schema 整体仍为候选 0.1.0，未锁定。
 ```
 
-### CHANGE-003 视频视觉表现改造（已决定，阶段一未实现）
+### CHANGE-003 视频视觉表现改造（阶段一–三已实现）
 
-> **状态：方案已定，代码未改。** 本记录确定改造顺序与阶段一范围，
-> 不代表四阶段都已批准或已开工。
+> **状态：阶段一–三已实现，阶段四未开工。**
+> 具体行为规格见 [视频生产 SDD](backend/video-production.spec.md)；
+> 产品侧要求见 [PRD 第 5.1 节](common/prd.md)。
 
 ```text
 编号：CHANGE-003
@@ -217,7 +218,9 @@
     每条视频选一个模板，避免所有视频长一样
 
 影响条款、生产方、消费方：
-  - 生产侧：scripts/render_video.py、src/content/video/{template,compose,scenes}.py
+  规格载体：manual/specs/backend/video-production.spec.md（新增），
+  产品要求：manual/specs/common/prd.md 第 5.1 节（新增）。
+  - 生产侧：scripts/render_video.py、src/content/video/{template,compose,scenes,layout}.py
   - 分镜数据：Scene 需支持 card_reveal（逐条出现的进度）与可选 motion 参数
   - **不改** manual/contracts/cyber-sloth.schema.json：分镜 JSON 属于
     生产侧的中间产物，不是对平台的发布契约。PublicationManifest 不变。
@@ -237,8 +240,10 @@
   断言成片总时长仍等于各场 hold 之和（防止转场吃掉时长）。
 
 开发者结论、日期与确认依据：
-  2026-10-26 用户指示「先记录契约」。记录的是改造顺序与阶段一范围；
-  阶段一代码尚未开始，交付前需要用户验收观感。
+  2026-10-26 用户先指示「先记录契约」，随后指示
+  「BC 都做一下，然后帮我先实现视觉表现形式前三个阶段」。
+  阶段一–三已实现；阶段四（模板系统）未开工。
+  视觉观感无法自动断言，交付后仍需用户人工验收。
 ```
 
 ## GOV-05 后续单函数实施记录

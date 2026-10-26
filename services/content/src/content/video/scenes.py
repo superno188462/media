@@ -25,6 +25,14 @@ LINE_PENDING = "pending"
 
 LINE_STATES = {LINE_NORMAL, LINE_ACTIVE, LINE_DONE, LINE_PENDING}
 
+#: 版式（VP-DATA-02）。
+LAYOUT_CARD = "card"
+LAYOUT_HEADLINE = "headline"
+LAYOUT_CLOSEUP = "closeup"
+LAYOUT_CENTER_CARD = "center_card"
+
+LAYOUTS = {LAYOUT_CARD, LAYOUT_HEADLINE, LAYOUT_CLOSEUP, LAYOUT_CENTER_CARD}
+
 
 @dataclass
 class CardLine:
@@ -66,10 +74,30 @@ class Scene:
     outro_sub: str = ""
     #: 额外的角标文字，如 "Day 0"
     badge: str = ""
+    #: 版式，见 VP-DATA-02：card / headline / closeup / center_card
+    layout: str = LAYOUT_CARD
+    #: 卡片逐条出现的行数进度，如 [1, 2, 3]；None 表示整卡一次出现
+    card_reveal: list[int] | None = None
+    #: 运镜，见 VP-DATA-03；None 时按版式自动选
+    motion: str | None = None
+    #: 转场，fade / none；None 用默认淡入淡出
+    transition: str | None = None
+    #: 卡片只显示前 N 行（其余保持占位、透明）；None 表示全部可见。
+    #: 由 card_reveal 展开时自动填入，不要让作者手写。
+    visible_lines: int | None = None
 
     def __post_init__(self) -> None:
         if self.hold_ms < 0:
             raise ValueError("hold_ms 不能为负；给 0 表示由配音决定")
+        if self.layout not in LAYOUTS:
+            raise ValueError(f"未知版式：{self.layout}")
+        if self.card_reveal is not None:
+            if not self.card_reveal:
+                raise ValueError("card_reveal 不能是空数组；要整卡出现请留 null")
+            if any(v <= 0 for v in self.card_reveal):
+                raise ValueError("card_reveal 的每一项都必须为正")
+            if self.card is None:
+                raise ValueError("card_reveal 需要同时提供 card")
 
     @property
     def has_dialogue(self) -> bool:
@@ -137,6 +165,11 @@ class Storyboard:
                     outro=raw.get("outro", ""),
                     outro_sub=raw.get("outro_sub", ""),
                     badge=raw.get("badge", ""),
+                    layout=raw.get("layout", LAYOUT_CARD),
+                    card_reveal=raw.get("card_reveal"),
+                    motion=raw.get("motion"),
+                    transition=raw.get("transition"),
+                    visible_lines=raw.get("visible_lines"),
                 )
             )
         return cls(

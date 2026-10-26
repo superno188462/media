@@ -5,7 +5,9 @@
   "disclaimer": "本视频含 AI 生成内容",
   "accent": "#2E6BD6",
   "assets": {
-    "main": "D:/github/robot/services/content/.runtime/cut/sprite.png"
+    "main": "D:/github/robot/services/content/assets/poses/main.png",
+    "point": "D:/github/robot/services/content/assets/poses/point.png",
+    "sleepy": "D:/github/robot/services/content/assets/poses/sleepy.png"
   },
   "scenes": [
     {
@@ -17,12 +19,14 @@
         "title": "先说说进度",
         "main": "创作与评论跑通",
         "sub": "发布也接通了"
-      }
+      },
+      "layout": "headline",
+      "motion": "zoom_out"
     },
     {
       "hold_ms": 0,
       "badge": "测试 01",
-      "pose": "main",
+      "pose": "point",
       "caption": "图文和视频都能出，发布这一步也接上了。",
       "card": {
         "title": "创作",
@@ -47,7 +51,9 @@
             "index": "✓"
           }
         ]
-      }
+      },
+      "layout": "card",
+      "motion": "zoom_in"
     },
     {
       "hold_ms": 0,
@@ -77,12 +83,14 @@
             "index": "3"
           }
         ]
-      }
+      },
+      "layout": "card",
+      "motion": "pan_right"
     },
     {
       "hold_ms": 0,
       "badge": "测试 01",
-      "pose": "main",
+      "pose": "sleepy",
       "caption": "评论区留一句，我把它当测试集用。",
       "card": {
         "title": "当测试集用",
@@ -106,12 +114,51 @@
           }
         ],
         "footer": "不是开测试，是攒样本"
+      },
+      "layout": "center_card",
+      "motion": "zoom_in"
+    },
+    {
+      "hold_ms": 0,
+      "badge": "测试 01",
+      "pose": "sleepy",
+      "layout": "center_card",
+      "motion": "zoom_out",
+      "caption": "所以现在别指望它全自动。",
+      "card": {
+        "title": "现在这个阶段",
+        "icon": "🌱",
+        "lines": [
+          {
+            "text": "我也是边做边学",
+            "state": "normal",
+            "index": "1"
+          },
+          {
+            "text": "加功能时可能出 bug",
+            "sub": "出 bug 时原本能用的会暂时不好使",
+            "state": "active",
+            "index": "2"
+          },
+          {
+            "text": "真搞好了才跑自动化",
+            "state": "normal",
+            "index": "3"
+          },
+          {
+            "text": "完整之后拆成多服务",
+            "sub": "稳定性靠这个，不是靠单机扛",
+            "state": "normal",
+            "index": "4"
+          }
+        ],
+        "footer": "现在坏了就是坏了，我会修"
       }
     },
     {
       "hold_ms": 0,
       "badge": "测试 01",
-      "pose": "main",
+      "pose": "point",
       "caption": "发布这一步，模型自己做不到，得人点通过。",
       "card": {
         "title": "审核",
@@ -133,7 +180,9 @@
             "index": "3"
           }
         ]
-      }
+      },
+      "layout": "card",
+      "motion": "pan_left"
     },
     {
       "hold_ms": 0,
@@ -170,14 +219,18 @@
           }
         ],
         "footer": "开源项目打底，商业服务按量付费"
-      }
+      },
+      "layout": "center_card",
+      "motion": "zoom_in"
     },
     {
       "hold_ms": 0,
       "badge": "测试 01",
       "pose": "main",
-      "outro": "AI 运营实验 · 测试 01",
-      "outro_sub": "评论区留一句，看它回不回你"
+      "outro": "谢谢你看到这里",
+      "outro_sub": "评论区留一句，我把它当测试集",
+      "layout": "headline",
+      "motion": "zoom_out"
     }
   ]
 }
