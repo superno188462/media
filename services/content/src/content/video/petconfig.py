@@ -40,6 +40,8 @@ class PetConfig:
     seed: int = 0
     #: 压上受保护区的面积比例阈值
     trigger_ratio: float = pet_mod.DRAG_TRIGGER_RATIO
+    #: 换位置时故意走到 UI 上的概率（不然永远抓不到）
+    mischief_chance: float = pet_mod.MISCHIEF_CHANCE
     #: 活动区，归一化 [x, y, w, h]
     wander_area: tuple[float, float, float, float] = (0.36, 0.09, 0.58, 0.89)
     #: 受保护区，像素 [[x, y, w, h], ...]
@@ -122,6 +124,7 @@ class PetConfig:
             size=int(raw.get("size", 420)),
             seed=int(raw.get("seed", 0)),
             trigger_ratio=float(raw.get("trigger_ratio", pet_mod.DRAG_TRIGGER_RATIO)),
+            mischief_chance=float(raw.get("mischief_chance", pet_mod.MISCHIEF_CHANCE)),
             wander_area=tuple(float(v) for v in wander),
             protected_zones=[tuple(int(v) for v in zone) for zone in zones],
         )
@@ -180,6 +183,7 @@ class PetConfig:
             "size": self.size,
             "seed": self.seed,
             "trigger_ratio": self.trigger_ratio,
+            "mischief_chance": self.mischief_chance,
             "wander_area": list(self.wander_area),
             "protected_zones": [list(z) for z in self.protected_zones],
             "actions": dict(self.actions),

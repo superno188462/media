@@ -62,6 +62,8 @@ class PetFrame:
     y: int
     angle: float
     dragging: bool
+    #: 是否处于「换位置」过程；False 表示停在原地做动作
+    moving: bool = False
 
     def box(self, width: int, height: int) -> Rect:
         return Rect(self.x, self.y, width, height)
@@ -75,7 +77,11 @@ WANDER_SPEED = (55.0, 130.0)
 #: 手伸下来根本看不清。降到 320–520 后约 1–2 秒，动作能被眼睛跟上。
 DRAG_SPEED = (320.0, 520.0)
 
-#: 两个目标点之间的间隔。
+#: 停留时长。风格 C：大部分时间待在原地做动作，只偶尔换位置。
+#: 配合下面的移动速度，停留约占 70%，移动约占 30%。
+STAY_MS = (3800, 9500)
+
+#: 两个目标点之间的间隔（移动模式下重新选点的兜底）。
 TARGET_INTERVAL_MS = (1600, 3400)
 
 #: 被拖之后的冷却，避免贴着边缘反复抽搐。
@@ -84,6 +90,10 @@ DRAG_COOLDOWN_MS = (1400, 2600)
 #: 只有**压上去的面积**超过角色面积的这个比例才触发拖拽。
 #: 轻微擦边不拖——否则会被拖得过于频繁，看着像抽搐。
 DRAG_TRIGGER_RATIO = 0.18
+
+#: 每次换位置时，"故意走到受保护区上"的概率。
+#: 没有这个，角色总待在安全区，被抓就永远不发生。
+MISCHIEF_CHANCE = 0.35
 
 #: 浮动与倾斜的幅度与周期。
 BOB_AMPLITUDE = 10.0
@@ -105,9 +115,11 @@ class PetPlanner:
         wander: Rect,
         protected: list[Rect],
         trigger_ratio: float = DRAG_TRIGGER_RATIO,
+        mischief_chance: float = MISCHIEF_CHANCE,
     ) -> None:
         self.fps = fps
         self.trigger_ratio = trigger_ratio
+        self.mischief_chance = max(0.0, min(1.0, mischief_chance))
         self.stage = stage
         self.pet_w, self.pet_h = pet_size
         self.wander = wander
@@ -126,6 +138,27 @@ class PetPlanner:
             self.rng.uniform(self.wander.y, max_y),
         )
 
+    def _mischief_point(self) -> tuple[float, float] | None:
+        """故意选一个压在受保护区上的目标点。"""
+        zones = [z for z in self.protected if z.w > 0 and z.h > 0]
+        if not zones:
+            return None
+        zone = self.rng.choice(zones)
+        # 目标点落在禁区内部，保证角色会压上去
+        x = self.rng.uniform(zone.x, max(zone.x, zone.right - self.pet_w * 0.6))
+        y = self.rng.uniform(zone.y, max(zone.y, zone.bottom - self.pet_h * 0.6))
+        max_x = max(self.wander.x, self.wander.right - self.pet_w)
+        max_y = max(self.wander.y, self.wander.bottom - self.pet_h)
+        return (min(max(x, self.wander.x), max_x), min(max(y, self.wander.y), max_y))
+
+    def _pick_target(self) -> tuple[float, float]:
+        """换位置时的目标点：有概率故意去惹 UI。"""
+        if self.rng.random() < self.mischief_chance:
+            point = self._mischief_point()
+            if point is not None:
+                return point
+        return self._random_point()
+
     def _violates(self, box: Rect) -> bool:
         """压上去的面积是否超过阈值（不是一碰就算）。"""
         pet_area = float(box.w * box.h) or 1.0
@@ -135,15 +168,16 @@ class PetPlanner:
         return False
 
     def _escape_point(self, box: Rect) -> tuple[float, float]:
-        """找一个最近的、不违反保护的落点。
+        """选一个**尽量远**的合法落点——扔出去才有距离感。
 
-        优先往右上方躲——那里通常只有立绘自身的空间。
+        不用"最近点"：角色只是轻微越界时，最近点就在旁边，
+        拖拽只持续 0.1 秒，手伸下来根本看不清。
+        这里在所有合法落点里挑最靠右的，形成"被拎起来扔到一边"。
         """
         best: tuple[float, float] | None = None
-        best_distance = float("inf")
+        best_x = float("-inf")
         cx, cy = box.center()
 
-        # 在活动区里撒点取样，取最近的不违规位置
         max_x = max(self.wander.x, self.wander.right - self.pet_w)
         max_y = max(self.wander.y, self.wander.bottom - self.pet_h)
         steps_x = 12
@@ -155,13 +189,12 @@ class PetPlanner:
                 candidate = Rect(int(x), int(y), self.pet_w, self.pet_h)
                 if self._violates(candidate):
                     continue
-                px, py = candidate.center()
-                distance = math.hypot(px - cx, py - cy)
-                if distance < best_distance:
-                    best_distance = distance
+                # 优先最右；同样靠右时取离当前位置近的
+                score = (x, -math.hypot(x + self.pet_w / 2 - cx, y + self.pet_h / 2 - cy))
+                if score[0] > best_x:
+                    best_x = score[0]
                     best = (x, y)
 
-        # 全区域都违规时退回活动区右上角
         return best or (max_x, self.wander.y)
 
     # -------------------------------------------------------------- 主循环
@@ -175,8 +208,10 @@ class PetPlanner:
         frame_ms = 1000.0 / self.fps
 
         x, y = self._random_point()
-        target_x, target_y = self._random_point()
-        next_target_at = self.rng.uniform(*TARGET_INTERVAL_MS)
+        target_x, target_y = x, y
+        # 风格 C：先停一会儿，再换位置
+        moving = False
+        mode_deadline = self.rng.uniform(*STAY_MS)
         speed = self.rng.uniform(*WANDER_SPEED)
 
         dragging = False
@@ -187,10 +222,12 @@ class PetPlanner:
         for index in range(count):
             now = index * frame_ms
 
-            if now >= next_target_at and not dragging:
-                target_x, target_y = self._random_point()
-                next_target_at = now + self.rng.uniform(*TARGET_INTERVAL_MS)
-                speed = self.rng.uniform(*WANDER_SPEED)
+            if not dragging:
+                if not moving and now >= mode_deadline:
+                    # 开始换位置
+                    moving = True
+                    target_x, target_y = self._pick_target()
+                    speed = self.rng.uniform(*WANDER_SPEED)
 
             step = (drag_speed if dragging else speed) * frame_ms / 1000.0
 
@@ -198,24 +235,30 @@ class PetPlanner:
             dy = target_y - y
             distance = math.hypot(dx, dy)
 
-            if distance <= step or distance == 0:
-                x, y = target_x, target_y
-                if dragging:
-                    # 拖到位了：结束拖拽，进入冷却，重新游走
-                    dragging = False
-                    cooldown_until = now + self.rng.uniform(*DRAG_COOLDOWN_MS)
-                    target_x, target_y = self._random_point()
-                    next_target_at = now + self.rng.uniform(*TARGET_INTERVAL_MS)
-                    speed = self.rng.uniform(*WANDER_SPEED)
-            else:
-                x += dx / distance * step
-                y += dy / distance * step
+            if dragging or moving:
+                if distance <= step or distance == 0:
+                    x, y = target_x, target_y
+                    if dragging:
+                        # 拖到位了：结束拖拽，进入冷却，然后停一会儿
+                        dragging = False
+                        cooldown_until = now + self.rng.uniform(*DRAG_COOLDOWN_MS)
+                        moving = False
+                        mode_deadline = now + self.rng.uniform(*STAY_MS)
+                        target_x, target_y = x, y
+                    elif moving:
+                        # 到位了：进入停留
+                        moving = False
+                        mode_deadline = now + self.rng.uniform(*STAY_MS)
+                else:
+                    x += dx / distance * step
+                    y += dy / distance * step
 
             box = Rect(int(x), int(y), self.pet_w, self.pet_h)
 
             # 踩到受保护区且不在冷却 → 开始被拖走
             if not dragging and now >= cooldown_until and self._violates(box):
                 dragging = True
+                moving = False
                 drag_speed = self.rng.uniform(*DRAG_SPEED)
                 target_x, target_y = self._escape_point(box)
 
@@ -229,6 +272,7 @@ class PetPlanner:
                     y=int(y + bob),
                     angle=angle,
                     dragging=dragging,
+                    moving=moving,
                 )
             )
 
@@ -243,9 +287,11 @@ class PetPlanner:
                 events += 1
         xs = [f.x for f in frames] or [0]
         ys = [f.y for f in frames] or [0]
+        moving_frames = sum(1 for f in frames if f.moving)
         return {
             "seed": self.seed,
             "frames": len(frames),
+            "moving_pct": round(moving_frames / len(frames) * 100, 1) if frames else 0.0,
             "drag_events": events,
             "drag_frame_ratio_pct": round(drag_frames / len(frames) * 100, 1) if frames else 0.0,
             "x_range": [min(xs), max(xs)],

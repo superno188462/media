@@ -173,3 +173,46 @@ def test_composite_rejects_short_track(tmp_path):
     Image.new("RGB", (320, 180), (0, 0, 0)).save(bg)
     with pytest.raises(C.CompositeError):
         C.compose_layers([bg], [2000], tmp_path / "o.mp4", pet_frames=[], size=(320, 180))
+
+
+# ------------------------------------------------------------------ 风格 C：停留与移动
+
+def test_stay_dominates_movement():
+    """风格 C：大部分时间待在原地做动作，移动只占少数。"""
+    frames = planner(seed=1).frames(36000)
+    moving = sum(1 for f in frames if f.moving)
+    ratio = moving / len(frames) * 100
+    assert 10 <= ratio <= 50, f"移动占比 {ratio:.1f}% 不在 10–50% 之间"
+
+
+def test_position_is_steady_while_staying():
+    """停留期间位置几乎不变（只有浮动带来的微小位移）。"""
+    frames = planner(seed=3).frames(20000)
+    steady = [f for f in frames if not f.moving and not f.dragging]
+    assert steady, "整段都没有停留帧"
+    xs = [f.x for f in steady]
+    # 停留时不应出现大幅位移
+    assert max(xs) - min(xs) < 200
+
+
+def test_mischief_increases_grabs():
+    """没有捣乱概率时，角色会在安全区待着，被拖次数明显更少。"""
+    calm = planner(seed=5, mischief_chance=0.0).frames(36000)
+    naughty = planner(seed=5, mischief_chance=0.9).frames(36000)
+    calm_grabs = sum(1 for a, b in zip(calm, calm[1:]) if b.dragging and not a.dragging)
+    naughty_grabs = sum(1 for a, b in zip(naughty, naughty[1:]) if b.dragging and not a.dragging)
+    assert naughty_grabs >= calm_grabs
+
+
+def test_drag_lasts_long_enough_to_see():
+    """拖拽必须持续足够久，否则手伸下来就没了。"""
+    frames = planner(seed=1).frames(36000)
+    spans, start = [], None
+    for index, frame in enumerate(frames):
+        if frame.dragging and start is None:
+            start = index
+        elif not frame.dragging and start is not None:
+            spans.append((index - start) / 30)
+            start = None
+    assert spans, "这段没有发生拖拽"
+    assert max(spans) >= 0.8, f"最长拖拽只有 {max(spans):.2f}s，看不清"

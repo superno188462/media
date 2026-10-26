@@ -199,6 +199,7 @@ def main() -> int:
             wander=config.wander_rect(width, height),
             protected=config.protected_rects(),
             trigger_ratio=config.trigger_ratio,
+            mischief_chance=config.mischief_chance,
         )
         slots = planner.frames(sum(holds))
         pet_info = planner.summary(slots)
