@@ -120,11 +120,16 @@ def test_every_motion_produces_valid_expression(motion):
 
 # ------------------------------------------------------------------ 版式默认
 
-def test_default_motion_per_layout():
-    assert L.default_motion("card") == M.MOTION_ZOOM_IN
-    assert L.default_motion("headline") == M.MOTION_ZOOM_OUT
-    assert L.default_motion("closeup") == M.MOTION_PAN_RIGHT
-    assert L.default_motion("center_card") == M.MOTION_ZOOM_IN
+def test_default_motion_is_none_for_every_layout():
+    """整帧运镜默认关闭：UI 跟着动会被评"页面在抖"。"""
+    for layout in ("card", "headline", "closeup", "center_card"):
+        assert L.default_motion(layout) == M.MOTION_NONE
+
+
+def test_explicit_motion_still_works():
+    """能力保留：分镜里显式写 motion 仍然生效。"""
+    scene = S.Scene(hold_ms=1000, pose="main", motion="zoom_in")
+    assert L.resolve_motion(scene) == M.MOTION_ZOOM_IN
 
 
 def test_explicit_motion_wins():

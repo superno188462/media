@@ -23,11 +23,15 @@ from .scenes import (
 )
 
 #: 版式到默认运镜的映射（VP-DATA-03）。
+#:
+#: **默认全部关闭。** 实测把整帧放大/平移会被评价为"页面在抖、很难受"——
+#: 因为 UI 和文字也跟着一起动。运动应该只发生在角色层（见 --pet 模式）。
+#: 需要整帧运镜时必须在分镜里显式写 ``motion``。
 DEFAULT_MOTION = {
-    LAYOUT_CARD: M.MOTION_ZOOM_IN,
-    LAYOUT_HEADLINE: M.MOTION_ZOOM_OUT,
-    LAYOUT_CLOSEUP: M.MOTION_PAN_RIGHT,
-    LAYOUT_CENTER_CARD: M.MOTION_ZOOM_IN,
+    LAYOUT_CARD: M.MOTION_NONE,
+    LAYOUT_HEADLINE: M.MOTION_NONE,
+    LAYOUT_CLOSEUP: M.MOTION_NONE,
+    LAYOUT_CENTER_CARD: M.MOTION_NONE,
 }
 
 #: 反单调检查的阈值（VP-RULE-05）。
