@@ -1,0 +1,19 @@
+{
+  "pet": {
+    "enabled": true,
+    "source": "flipbook",
+    "clips": {
+      "idle": "../assets/pet/idle"
+    },
+    "clip_fps": 10,
+    "crossfade": 0.45,
+    "size": 420,
+    "seed": 0,
+    "trigger_ratio": 0.18,
+    "wander_area": [0.36, 0.09, 0.58, 0.89],
+    "protected_zones": [
+      [300, 150, 1320, 720],
+      [300, 880, 1320, 160]
+    ]
+  }
+}

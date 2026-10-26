@@ -45,6 +45,7 @@ from content.video import (  # noqa: E402
 from content.video import motion as motion_tool  # noqa: E402
 from content.video import composite  # noqa: E402
 from content.video import pet as pet_mod  # noqa: E402
+from content.video import petconfig  # noqa: E402
 
 #: 渲染中间产物不放 .local：实测 ffmpeg 子进程写不进去。
 DEFAULT_WORK_DIR = _HERE.parents[1] / ".runtime" / "video"
@@ -75,8 +76,10 @@ def main() -> int:
                         help="转场时长；0 表示无转场（硬切）")
     parser.add_argument("--pet", action="store_true",
                         help="角色独立运动：UI 静止，角色随机游走，压到 UI 会被拖走")
-    parser.add_argument("--seed", type=int, default=0,
-                        help="角色行为种子；0 表示按当前时间随机")
+    parser.add_argument("--pet-config", default=None,
+                        help="宠物配置文件（隐含 --pet）；见 examples/pet_config.json")
+    parser.add_argument("--seed", type=int, default=None,
+                        help="覆盖配置里的种子；0 表示按当前时间随机")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -166,7 +169,16 @@ def main() -> int:
 
     pet_info: dict | None = None
 
-    if args.pet:
+    pet_enabled = args.pet or bool(args.pet_config)
+    if pet_enabled:
+        try:
+            config = (
+                petconfig.PetConfig.load(Path(args.pet_config))
+                if args.pet_config else petconfig.PetConfig()
+            )
+        except petconfig.ConfigError as exc:
+            return fail("PET_CONFIG_INVALID", str(exc))
+
         # 分层：背景不含角色，角色单独合成
         try:
             with PlaywrightRenderer() as renderer:
@@ -176,34 +188,38 @@ def main() -> int:
 
         width, height = storyboard.width, storyboard.height
         stage = pet_mod.Rect(0, 0, width, height)
-        wander = pet_mod.Rect(
-            int(width * 0.36), int(height * 0.09),
-            int(width * 0.58), int(height * 0.89),
-        )
-        # 受保护区覆盖两种卡片版式（左卡片 + 居中卡片）和字幕条
-        protected = [
-            pet_mod.Rect(300, 150, 1320, 720),     # 卡片带（含居中卡片）
-            pet_mod.Rect(300, 880, 1320, 160),     # 字幕区
-        ]
-        pet_height = 420
-        seed = args.seed or int(time.time()) % 1_000_000
+        seed = args.seed if args.seed is not None else config.seed
+        if not seed:
+            seed = int(time.time()) % 1_000_000
+
         planner = pet_mod.PetPlanner(
             seed=seed, fps=args.fps, stage=stage,
-            pet_size=(pet_height, pet_height), wander=wander, protected=protected,
+            pet_size=(config.size, config.size),
+            wander=config.wander_rect(width, height),
+            protected=config.protected_rects(),
+            trigger_ratio=config.trigger_ratio,
         )
         slots = planner.frames(sum(holds))
         pet_info = planner.summary(slots)
 
-        sprites = []
-        # 角色是"页面级"的宠物：所有场景都保留，只随场景换姿势
-        for scene in storyboard.scenes:
-            asset = storyboard.assets.get(scene.pose, "") if scene.pose else ""
-            sprites.append(Path(asset) if asset and Path(asset).is_file() else None)
+        # 帧源按动作名构造；本轮只有 idle，所有屏共用一段连续动画
+        try:
+            idle_clip = config.build_clip("idle")
+        except Exception as exc:  # noqa: BLE001
+            return fail("PET_CLIP_FAILED", f"{type(exc).__name__}: {exc}")
+
+        clips = [idle_clip] * len(storyboard.scenes)
+        pet_info.update({
+            "source": config.source,
+            "frame_count": getattr(idle_clip, "frame_count", 1),
+            "clip_fps": config.clip_fps,
+            "size": config.size,
+        })
 
         try:
             result = composite.compose_layers(
                 backgrounds, holds, Path(args.out),
-                pet_frames=slots, sprites_by_scene=sprites, sprite_height=pet_height,
+                pet_frames=slots, clips_by_scene=clips, sprite_height=config.size,
                 audio=audio_path, fps=args.fps, transition_ms=transition_ms,
                 size=(width, height),
             )

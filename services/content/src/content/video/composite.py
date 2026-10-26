@@ -77,9 +77,8 @@ def compose_layers(
     holds_ms: list[int],
     out_path: Path,
     *,
-    sprite: Path | None = None,
+    clips_by_scene: list | None = None,
     pet_frames: list[pet_mod.PetFrame] | None = None,
-    sprites_by_scene: list[Path | None] | None = None,
     sprite_height: int = 420,
     audio: Path | None = None,
     fps: int = DEFAULT_FPS,
@@ -89,8 +88,11 @@ def compose_layers(
 ) -> LayerResult:
     """把背景与角色合成 mp4。
 
-    ``sprite`` 用同一个立绘贯穿；``sprites_by_scene`` 允许每屏换姿势，
-    此时转场期间会交叉淡化两个姿势。
+    ``clips_by_scene`` 每项是 ``petclip`` 里的一种帧源（Flipbook/Static/Video），
+    为 None 表示该屏不画角色。转场期间两屏的帧会交叉淡化。
+
+    用帧源而不是图片，是为了让"动作"和"素材来源"解耦：
+    翻页动画和将来视频生成的片段都走同一条路径。
     """
     from PIL import Image
 
@@ -111,16 +113,9 @@ def compose_layers(
         with Image.open(path) as opened:
             scene_images.append(opened.convert("RGB").resize((width, height), Image.LANCZOS))
 
-    # 每屏一个立绘（可以是同一个文件）
-    if sprites_by_scene is None:
-        sprites_by_scene = [sprite] * len(backgrounds)
-    prepared: list = []
-    for item in sprites_by_scene:
-        if item is None:
-            prepared.append(None)
-        else:
-            path = Path(item)
-            prepared.append(_prepare_sprite(path, sprite_height) if path.is_file() else None)
+    prepared = list(clips_by_scene or [None] * len(backgrounds))
+    if len(prepared) != len(backgrounds):
+        raise CompositeError("帧源数量与背景数量不一致")
 
     frame_count = max(1, round(total_ms / 1000 * fps))
     if pet_frames is not None and len(pet_frames) < frame_count:
@@ -173,9 +168,11 @@ def compose_layers(
 
             if pet_frames is not None and (first is not None or second is not None):
                 pose = pet_frames[frame_index]
-                for layer, layer_weight in ((first, 1.0 - weight), (second, weight)):
-                    if layer is None or layer_weight <= 0.001:
+                # 帧源按全局时间取帧：动作连续，不会每屏重头播
+                for clip, layer_weight in ((first, 1.0 - weight), (second, weight)):
+                    if clip is None or layer_weight <= 0.001:
                         continue
+                    layer = clip.frame_at(t_ms)
                     rotated = layer.rotate(
                         -pose.angle, resample=Image.BICUBIC, expand=True
                     )
