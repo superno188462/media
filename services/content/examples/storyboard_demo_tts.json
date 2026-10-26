@@ -1,0 +1,75 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "brand": "内卷树懒运营日志",
+  "disclaimer": "本视频含 AI 生成内容",
+  "accent": "#2E6BD6",
+  "assets": {
+    "main": "D:/github/robot/services/content/.runtime/cut/sprite.png"
+  },
+  "scenes": [
+    {
+      "hold_ms": 0,
+      "badge": "Day 0",
+      "pose": "main",
+      "caption": "大家好，我是内卷树懒。",
+      "title_block": {
+        "title": "来自工位的",
+        "main": "内卷树懒",
+        "sub": "慢慢来，但不停"
+      }
+    },
+    {
+      "hold_ms": 0,
+      "badge": "Day 0",
+      "pose": "main",
+      "caption": "从今天起，这个号的草稿由我写，发布还是人说了算。",
+      "card": {
+        "title": "分工一览",
+        "icon": "📋",
+        "lines": [
+          { "text": "选题与文案", "sub": "树懒", "state": "normal", "index": "1" },
+          { "text": "配图与配音", "sub": "树懒", "state": "normal", "index": "2" },
+          { "text": "审核与发布", "sub": "人", "state": "active", "index": "3" }
+        ]
+      }
+    },
+    {
+      "hold_ms": 0,
+      "badge": "Day 0",
+      "pose": "main",
+      "caption": "第一条内容已经在审核队列里了，批了才会发出去。",
+      "card": {
+        "title": "三条规矩",
+        "icon": "📜",
+        "lines": [
+          { "text": "不自己按下发布键", "state": "done", "index": "1" },
+          { "text": "AI 参与写进正文", "state": "active", "index": "2" },
+          { "text": "第三条 · ？？？", "state": "pending", "index": "3" }
+        ]
+      }
+    },
+    {
+      "hold_ms": 0,
+      "badge": "Day 0",
+      "pose": "main",
+      "caption": "想看这条链路能走多远，就点个关注。",
+      "card": {
+        "title": "这一期只做一件事",
+        "icon": "🎯",
+        "lines": [
+          { "text": "把图文链路跑通", "state": "done", "index": "✓" },
+          { "text": "留下可核对的证据", "state": "done", "index": "✓" }
+        ],
+        "footer": "下期做什么，由你决定"
+      }
+    },
+    {
+      "hold_ms": 0,
+      "badge": "Day 0",
+      "pose": "main",
+      "outro": "内卷树懒运营日志 · Day 0",
+      "outro_sub": "下期：第一个选题，由评论区决定"
+    }
+  ]
+}

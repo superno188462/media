@@ -1,0 +1,21 @@
+# 本机运行数据、凭据、备份与日志。
+.local/
+.env
+.env.*
+!.env.example
+
+# 独立上游 Git 仓库；精确版本见 manual/docs/dsh-environment.md。
+/dsh/
+
+# 后续插件开发的生成物。
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+__pycache__/
+.venv/
+# Each service keeps generated runtime environments beside its source.
+services/**/.runtime/
+
+# bili-cli 上游是独立仓库，按 commit 拉取（见 services/bilibili/UPSTREAM.md）。
+services/bilibili/upstream/

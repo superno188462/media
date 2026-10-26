@@ -1,0 +1,20 @@
+[project]
+name = "engagement"
+version = "0.1.0"
+description = "内卷树懒互动分流：对评论回复做风险判定、按路由分发、留可审计记录"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/engagement"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

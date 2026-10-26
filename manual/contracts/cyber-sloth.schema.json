@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cyber-sloth:contracts:0.1.0",
+  "title": "内卷树懒共享契约候选 0.1.0",
+  "description": "声明式契约附件，尚未批准。消费者通过 $defs 下的具体定义验证数据；本文件不是业务实现。跨资源、授权、状态和字节摘要规则见 specs/common/global_schema.md 与后端 SDD。",
+  "$defs": {
+    "Id": {"type":"string","format":"uuid","pattern":"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$","description":"小写 UUID，稳定资源或请求标识；不能作为授权凭证。"},
+    "Digest": {"type":"string","pattern":"^[0-9a-f]{64}$","description":"SHA-256 小写十六进制；内容摘要和资产摘要分别按共享契约的字节规则计算。"},
+    "Timestamp": {"type":"string","format":"date-time","pattern":"Z$","description":"RFC3339 UTC 时间，序列化以 Z 结尾；界面按 Asia/Shanghai 展示。"},
+    "OpaqueId": {"type":"string","minLength":1,"maxLength":128,"description":"外部账号或身份的稳定不透明标识，不是可变昵称，也不含凭据。"},
+    "Visibility": {"type":"string","enum":["public","private"],"description":"公开范围：public 为公开，private 为仅自己可见；创建时必须显式指定。"},
+    "DraftStatus": {"type":"string","enum":["DRAFT","IN_REVIEW","APPROVED","REJECTED","CANCELED","EXPIRED"],"description":"草稿审核生命周期；发布进度单独由 PublishJob 表示。"},
+    "ReviewStatus": {"type":"string","enum":["PENDING","APPROVED","REJECTED","CANCELED","EXPIRED"],"description":"审核决定状态；PENDING 以外均为终态。"},
+    "DeliveryStatus": {"type":"string","enum":["QUEUED","SENT","FAILED","UNKNOWN"],"description":"通知投递状态；SENT 只表示平台接受消息，不代表用户阅读或审核。"},
+    "PublishStatus": {"type":"string","enum":["QUEUED","PREPARING","SUBMITTING","SUBMITTED","PUBLISHED","BLOCKED","FAILED","RESULT_UNKNOWN"],"description":"投稿状态：素材上传不是 SUBMITTED；平台已受理为 SUBMITTED；公开或仅自己可见结果按审核公开范围核对后为 PUBLISHED；不确定是否已受理为 RESULT_UNKNOWN。"},
+    "ErrorCode": {"type":"string","enum":["VALIDATION_ERROR","UNAUTHORIZED","FORBIDDEN","NOT_FOUND","REVISION_CONFLICT","DRAFT_LOCKED","STALE_REVIEW","REVIEW_EXPIRED","DECISION_ALREADY_TAKEN","IDEMPOTENCY_CONFLICT","ASSET_INVALID","ASSET_CHANGED","CAPABILITY_UNSUPPORTED","DEPENDENCY_UNAVAILABLE","DEPENDENCY_TIMEOUT","DEPENDENCY_INVALID_RESPONSE","LOGIN_REQUIRED","CAPTCHA_REQUIRED","ACCOUNT_MISMATCH","LAYOUT_CHANGED","AI_LABEL_UNVERIFIED","APPROVAL_EXPIRED","RESULT_UNKNOWN","JOB_NOT_RESUMABLE","STORAGE_UNAVAILABLE","PREVIEW_UNAVAILABLE","INTERNAL_ERROR"],"description":"机器可读错误；具体触发和恢复动作以服务端 SDD 的错误表为准。"},
+    "SafeDetails": {
+      "type":"object","additionalProperties":false,"description":"允许展示的诊断白名单；不得嵌入原始响应、令牌、路径或堆栈。",
+      "properties":{
+        "field":{"type":"string","maxLength":80,"description":"不合法的公开字段名。"},
+        "reason":{"type":"string","maxLength":160,"description":"经过脱敏的原因摘要，不复制第三方原始错误。"},
+        "current_revision":{"type":"integer","minimum":1,"description":"调用方有权限读取时返回的当前草稿版本。"},
+        "retry_after_seconds":{"type":"integer","minimum":0,"maximum":86400,"description":"建议等待秒数；不自动授权再次发布。"}
+      }
+    },
+    "ContractError": {
+      "type":"object","additionalProperties":false,"required":["code","message","retryable","trace_id","details"],"description":"应用边界的安全错误；retryable 表示同一业务操作可安全重试，不是建议重新点击平台投稿。",
+      "properties":{
+        "code":{"$ref":"#/$defs/ErrorCode","description":"稳定机器错误码。"},
+        "message":{"type":"string","minLength":1,"maxLength":240,"description":"供用户阅读的中文错误消息。"},
+        "retryable":{"type":"boolean","description":"当前操作是否可安全重试；结果未知必须为 false。"},
+        "trace_id":{"$ref":"#/$defs/Id","description":"不含凭据的诊断关联 ID。"},
+        "details":{"$ref":"#/$defs/SafeDetails","description":"可为空对象的安全诊断信息。"}
+      }
+    },
+    "Asset": {
+      "type":"object","additionalProperties":false,"required":["asset_id","sha256","mime_type","byte_size","width","height"],"description":"已导入受控存储的不可变媒体引用（图片或视频）；文件路径仅由资产适配器内部持有。sha256 覆盖完整文件字节，是「发布的就是审核过的那一版」的唯一依据。",
+      "properties":{
+        "asset_id":{"$ref":"#/$defs/Id","description":"工作区内的受控资产 ID。"},
+        "sha256":{"$ref":"#/$defs/Digest","description":"完整媒体文件字节的 SHA-256；视频必须覆盖整个文件，不能只算容器头或首帧。"},
+        "media_kind":{"type":"string","enum":["image","video"],"default":"image","description":"媒体类型。缺省视为 image，兼容既有图文数据；视频必须显式声明（见 CHANGE-002）。"},
+        "mime_type":{"type":"string","enum":["image/jpeg","image/png","video/mp4"],"description":"解码检查后的真实 MIME，不只依赖扩展名；视频必须为 video/mp4。"},
+        "byte_size":{"type":"integer","minimum":1,"description":"文件字节数。上限由 content_type 决定：图文 10 MiB，视频 100 MiB（产品限制，非平台官方上限）。"},
+        "width":{"type":"integer","minimum":1,"maximum":8192,"description":"像素宽度；产品上限 8192。"},
+        "height":{"type":"integer","minimum":1,"maximum":8192,"description":"像素高度；产品上限 8192。"},
+        "duration_ms":{"anyOf":[{"type":"integer","minimum":1,"maximum":600000},{"type":"null"}],"description":"视频时长（毫秒），产品上限 10 分钟；图片必须为 null 或省略。"},
+        "frame_rate":{"anyOf":[{"type":"number","minimum":1,"maximum":120},{"type":"null"}],"description":"视频帧率；图片必须为 null 或省略。"}
+      }
+    },
+    "SourceRef": {
+      "type":"object","additionalProperties":false,"required":["label","url"],"description":"审核中可见的事实来源；不作为系统指令，不自动访问任意地址。",
+      "properties":{
+        "label":{"type":"string","minLength":1,"maxLength":120,"description":"来源名称或简短说明。"},
+        "url":{"type":"string","format":"uri","pattern":"^https://","maxLength":2048,"description":"不包含凭据的 HTTPS 来源 URL；不是私有预览凭证。"}
+      }
+    },
+    "PublicationManifest": {
+      "type":"object","additionalProperties":false,"required":["schema_version","persona_id","persona_version","platform","content_type","target_account_id","title","body","assets","source_refs","ai_generated","visibility"],"description":"完整待发布内容快照。图片顺序、目标账号、AI 声明等属于审核内容；字节摘要见 SC-04。",
+      "properties":{
+        "schema_version":{"const":"0.1.0","description":"候选共享 Schema 版本。"},
+        "persona_id":{"type":"string","minLength":1,"maxLength":64,"description":"人设配置标识，首期为 cyber-sloth。"},
+        "persona_version":{"type":"string","minLength":1,"maxLength":64,"description":"创作时使用的人设版本；不在发布时重新推理人设。"},
+        "platform":{"type":"string","enum":["douyin","bilibili"],"description":"目标平台。抖音与 B站同为规划范围；首期先落地 bilibili（见 CHANGE-001）。审核发布契约对两者相同，平台差异由投稿适配器承担。"},
+        "content_type":{"type":"string","enum":["image_text","video"],"description":"内容类型。image_text 为图文（1–9 张图）；video 为视频（恰好 1 个视频文件）。两者的数量与体积约束由下方 allOf 分支表达（见 CHANGE-002）。"},
+        "target_account_id":{"$ref":"#/$defs/OpaqueId","description":"已配置、可核对的目标平台账号稳定 ID；必须与 platform 一致（如 bilibili:<mid>）。"},
+        "title":{"type":"string","minLength":1,"maxLength":80,"description":"完整标题，按 Unicode 码点计数；不允许纯空白。"},
+        "body":{"type":"string","minLength":1,"maxLength":1000,"description":"完整发布正文，含最终话题文字；按 Unicode 码点计数，不允许纯空白。"},
+        "assets":{"type":"array","minItems":1,"maxItems":9,"items":{"$ref":"#/$defs/Asset"},"description":"按发布顺序排列的媒体；同一 asset_id 不可重复。图文的顺序即图片顺序；视频只能有一个元素。"},
+        "source_refs":{"type":"array","maxItems":10,"items":{"$ref":"#/$defs/SourceRef"},"description":"0–10 条事实来源，无来源用空数组；审核时展示，不默认追加到发布正文。"},
+        "ai_generated":{"const":true,"description":"首期内容统一声明 AI 生成；平台具体标识方式由适配器真实验证。"},
+        "visibility":{"$ref":"#/$defs/Visibility","description":"经审核的公开范围，不设隐式默认值。"}
+      },
+      "allOf":[
+        {
+          "if":{"properties":{"content_type":{"const":"image_text"}},"required":["content_type"]},
+          "then":{"properties":{"assets":{"maxItems":9,"items":{"properties":{
+            "media_kind":{"enum":["image"]},
+            "mime_type":{"enum":["image/jpeg","image/png"]},
+            "byte_size":{"maximum":10485760},
+            "duration_ms":{"type":"null"},
+            "frame_rate":{"type":"null"}
+          }}}}}
+        },
+        {
+          "if":{"properties":{"content_type":{"const":"video"}},"required":["content_type"]},
+          "then":{"properties":{"assets":{"minItems":1,"maxItems":1,"items":{
+            "required":["media_kind","duration_ms","frame_rate"],
+            "properties":{
+              "media_kind":{"const":"video"},
+              "mime_type":{"const":"video/mp4"},
+              "byte_size":{"maximum":104857600},
+              "duration_ms":{"type":"integer","minimum":1,"maximum":600000},
+              "frame_rate":{"type":"number","minimum":1,"maximum":120}
+            }
+          }}}}
+        }
+      ]
+    },
+    "Draft": {
+      "type":"object","additionalProperties":false,"required":["workspace_id","draft_id","revision","status","manifest","content_digest","created_at","updated_at"],"description":"一个草稿版本的只读视图；历史 manifest 不被覆盖。",
+      "properties":{
+        "workspace_id":{"$ref":"#/$defs/Id","description":"所属工作区，必须与可信调用上下文一致。"},
+        "draft_id":{"$ref":"#/$defs/Id","description":"跨版本不变的草稿 ID。"},
+        "revision":{"type":"integer","minimum":1,"description":"从 1 开始递增的草稿内容版本。"},
+        "status":{"$ref":"#/$defs/DraftStatus","description":"当前版本的审核状态。"},
+        "manifest":{"$ref":"#/$defs/PublicationManifest","description":"此版本的完整不可变内容。"},
+        "content_digest":{"$ref":"#/$defs/Digest","description":"此版本已落盘 manifest 原始 UTF-8 字节的摘要。"},
+        "created_at":{"$ref":"#/$defs/Timestamp","description":"该草稿首次创建时间，修订时保持。"},
+        "updated_at":{"$ref":"#/$defs/Timestamp","description":"此视图最后状态或内容更新时间。"}
+      }
+    },
+    "ReviewRequest": {
+      "type":"object","additionalProperties":false,"required":["workspace_id","review_id","draft_id","revision","content_digest","provider","status","delivery_status","provider_message_id","created_at","expires_at","decided_at","reviewer_id","feedback"],"description":"与一个不可变版本绑定的审核请求；不包含可伪造的 approved 布尔输入。",
+      "properties":{
+        "workspace_id":{"$ref":"#/$defs/Id","description":"审核所属工作区。"},
+        "review_id":{"$ref":"#/$defs/Id","description":"稳定审核 ID。"},
+        "draft_id":{"$ref":"#/$defs/Id","description":"被审核草稿 ID。"},
+        "revision":{"type":"integer","minimum":1,"description":"被审核内容版本。"},
+        "content_digest":{"$ref":"#/$defs/Digest","description":"被审核 manifest 字节摘要。"},
+        "provider":{"const":"feishu","description":"首期审核提供方。"},
+        "status":{"$ref":"#/$defs/ReviewStatus","description":"审核生命周期状态。"},
+        "delivery_status":{"$ref":"#/$defs/DeliveryStatus","description":"审核卡片通知的投递状态。"},
+        "provider_message_id":{"anyOf":[{"$ref":"#/$defs/OpaqueId"},{"type":"null"}],"description":"已核对的飞书消息 ID；未发送或结果不明确时为 null。"},
+        "created_at":{"$ref":"#/$defs/Timestamp","description":"创建和开始计算有效期的时间。"},
+        "expires_at":{"$ref":"#/$defs/Timestamp","description":"审核截止时间，等于此时刻即失效。"},
+        "decided_at":{"anyOf":[{"$ref":"#/$defs/Timestamp"},{"type":"null"}],"description":"终态确定时间；仍待审时为 null。"},
+        "reviewer_id":{"anyOf":[{"$ref":"#/$defs/OpaqueId"},{"type":"null"}],"description":"做决定的可信审核人；自动过期/系统取消可为 null。"},
+        "feedback":{"type":["string","null"],"minLength":1,"maxLength":500,"description":"退回修改意见；无意见为 null，不用空字符串。"}
+      }
+    },
+    "PublishJob": {
+      "type":"object","additionalProperties":false,"required":["workspace_id","job_id","review_id","draft_id","revision","content_digest","target_account_id","status","approved_at","submit_deadline_at","created_at","updated_at","platform_item_id","platform_url","last_error"],"description":"一个被批准版本的唯一逻辑发布任务。平台副作用不承诺全局 exactly-once。",
+      "properties":{
+        "workspace_id":{"$ref":"#/$defs/Id","description":"所属工作区。"},
+        "job_id":{"$ref":"#/$defs/Id","description":"发布任务 ID。"},
+        "review_id":{"$ref":"#/$defs/Id","description":"授权此任务的审核 ID。"},
+        "draft_id":{"$ref":"#/$defs/Id","description":"被批准草稿 ID。"},
+        "revision":{"type":"integer","minimum":1,"description":"被批准版本，后续不可变。"},
+        "content_digest":{"$ref":"#/$defs/Digest","description":"被批准内容字节摘要。"},
+        "target_account_id":{"$ref":"#/$defs/OpaqueId","description":"发布目标，必须与 manifest 和当前登录身份一致。"},
+        "status":{"$ref":"#/$defs/PublishStatus","description":"投稿状态，按 BE-STATE-02 转换。"},
+        "approved_at":{"$ref":"#/$defs/Timestamp","description":"审核批准时间。"},
+        "submit_deadline_at":{"$ref":"#/$defs/Timestamp","description":"允许首次最终提交的截止时间；已提交后的只读核对不受此期限限制。"},
+        "created_at":{"$ref":"#/$defs/Timestamp","description":"任务创建时间。"},
+        "updated_at":{"$ref":"#/$defs/Timestamp","description":"最近状态更新时间。"},
+        "platform_item_id":{"anyOf":[{"$ref":"#/$defs/OpaqueId"},{"type":"null"}],"description":"有明确证据时记录的平台作品 ID，未知为 null。"},
+        "platform_url":{"type":["string","null"],"format":"uri","pattern":"^https://","maxLength":2048,"description":"经核对的作品 HTTPS 链接；未知或无法取得时为 null。"},
+        "last_error":{"anyOf":[{"$ref":"#/$defs/ContractError"},{"type":"null"}],"description":"最近安全错误；无错误为 null。"}
+      }
+    },
+    "DraftDetail": {
+      "type":"object","additionalProperties":false,"required":["draft","current_review","publish_job"],"description":"草稿详情聚合视图，使界面无需猜测关联审核或发布任务的 ID；只包含当前版本的关联资源。",
+      "properties":{
+        "draft":{"$ref":"#/$defs/Draft","description":"当前草稿版本。"},
+        "current_review":{"anyOf":[{"$ref":"#/$defs/ReviewRequest"},{"type":"null"}],"description":"当前版本的审核请求；当前版本未送审为 null，旧版本审核不混入。"},
+        "publish_job":{"anyOf":[{"$ref":"#/$defs/PublishJob"},{"type":"null"}],"description":"当前版本关联的唯一发布任务，尚未批准为 null。"}
+      }
+    },
+    "RegisterAssetRequest": {
+      "type":"object","additionalProperties":false,"required":["workspace_id","relative_path","idempotency_key"],"description":"从允许的工作区素材根目录导入图片；不接受任意 URL 或绝对路径。",
+      "properties":{
+        "workspace_id":{"$ref":"#/$defs/Id","description":"请求所属工作区。"},
+        "relative_path":{"type":"string","minLength":1,"maxLength":512,"description":"相对素材根目录的路径；服务端解析后必须仍在根目录内，包括符号链接检查。"},
+        "idempotency_key":{"$ref":"#/$defs/Id","description":"本操作的幂等请求 ID。"}
+      }
+    },
+    "CreateDraftRequest": {
+      "type":"object","additionalProperties":false,"required":["workspace_id","manifest","idempotency_key"],"description":"创建第一版草稿；不触发飞书通知或任何平台投稿。",
+      "properties":{
+        "workspace_id":{"$ref":"#/$defs/Id","description":"请求所属工作区。"},
+        "manifest":{"$ref":"#/$defs/PublicationManifest","description":"已经生成并可供核对的候选内容。"},
+        "idempotency_key":{"$ref":"#/$defs/Id","description":"本操作的幂等请求 ID。"}
+      }
+    },
+    "ReviseDraftRequest": {
+      "type":"object","additionalProperties":false,"required":["workspace_id","draft_id","expected_revision","manifest","idempotency_key"],"description":"在期望版本上创建下一版；修改待审内容时使旧审核失效。",
+      "properties":{
+        "workspace_id":{"$ref":"#/$defs/Id","description":"请求所属工作区。"},
+        "draft_id":{"$ref":"#/$defs/Id","description":"目标草稿 ID。"},
+        "expected_revision":{"type":"integer","minimum":1,"description":"调用方看到的当前版本，防止并发覆盖。"},
+        "manifest":{"$ref":"#/$defs/PublicationManifest","description":"完整新内容，不是自由格式差异补丁。"},
+        "idempotency_key":{"$ref":"#/$defs/Id","description":"本操作的幂等请求 ID。"}
+      }
+    },
+    "RequestReviewRequest": {
+      "type":"object","additionalProperties":false,"required":["workspace_id","draft_id","expected_revision","content_digest","idempotency_key"],"description":"为明确版本创建审核请求；审核人及群由服务端配置决定。",
+      "properties":{
+        "workspace_id":{"$ref":"#/$defs/Id","description":"请求所属工作区。"},
+        "draft_id":{"$ref":"#/$defs/Id","description":"送审草稿 ID。"},
+        "expected_revision":{"type":"integer","minimum":1,"description":"送审版本。"},
+        "content_digest":{"$ref":"#/$defs/Digest","description":"调用方核对的该版本摘要。"},
+        "idempotency_key":{"$ref":"#/$defs/Id","description":"本操作的幂等请求 ID。"}
+      }
+    },
+    "DraftIdentity": {"type":"object","additionalProperties":false,"required":["workspace_id","draft_id"],"description":"查询草稿身份，不构成访问授权。","properties":{"workspace_id":{"$ref":"#/$defs/Id","description":"工作区 ID。"},"draft_id":{"$ref":"#/$defs/Id","description":"草稿 ID。"}}},
+    "ReviewIdentity": {"type":"object","additionalProperties":false,"required":["workspace_id","review_id"],"description":"审核身份，不构成决定权限。","properties":{"workspace_id":{"$ref":"#/$defs/Id","description":"工作区 ID。"},"review_id":{"$ref":"#/$defs/Id","description":"审核 ID。"}}},
+    "JobIdentity": {"type":"object","additionalProperties":false,"required":["workspace_id","job_id"],"description":"查询、恢复或核对任务的身份，权限由方法上下文决定。","properties":{"workspace_id":{"$ref":"#/$defs/Id","description":"工作区 ID。"},"job_id":{"$ref":"#/$defs/Id","description":"任务 ID。"}}},
+    "ListDraftsRequest": {
+      "type":"object","additionalProperties":false,"required":["workspace_id"],"description":"按草稿首次创建时间和 ID 降序分页；默认每页 20。",
+      "properties":{
+        "workspace_id":{"$ref":"#/$defs/Id","description":"请求所属工作区。"},
+        "status":{"$ref":"#/$defs/DraftStatus","description":"可选状态过滤；缺失表示全部。"},
+        "cursor":{"type":["string","null"],"minLength":1,"maxLength":1024,"default":null,"description":"服务端不透明翻页游标，缺失/null 为第一页；绑定工作区和过滤条件。"},
+        "limit":{"type":"integer","minimum":1,"maximum":50,"default":20,"description":"每页数量，默认 20，上限 50。"}
+      }
+    },
+    "DraftPage": {
+      "type":"object","additionalProperties":false,"required":["items","next_cursor"],"description":"分页结果，无数据返回空数组。",
+      "properties":{
+        "items":{"type":"array","maxItems":50,"items":{"$ref":"#/$defs/Draft"},"description":"当前页可访问草稿。"},
+        "next_cursor":{"type":["string","null"],"minLength":1,"maxLength":1024,"description":"后续游标，没有下一页为 null；不是快照隔离保证。"}
+      }
+    },
+    "ReviewDecision": {
+      "type":"object","additionalProperties":false,"required":["provider_event_id","review_id","expected_revision","content_digest","action","feedback"],"description":"飞书适配器从已验证事件提取的内部输入；操作者和组织来自可信上下文，不允许由模型填入。",
+      "properties":{
+        "provider_event_id":{"$ref":"#/$defs/OpaqueId","description":"平台稳定事件标识；无稳定标识时由适配器生成可重复的交互去重标识并验收。"},
+        "review_id":{"$ref":"#/$defs/Id","description":"卡片绑定的审核 ID。"},
+        "expected_revision":{"type":"integer","minimum":1,"description":"卡片绑定的版本。"},
+        "content_digest":{"$ref":"#/$defs/Digest","description":"卡片绑定的完整内容摘要。"},
+        "action":{"type":"string","enum":["approve","reject","cancel"],"description":"通过并发布、退回修改或取消审核。"},
+        "feedback":{"type":["string","null"],"minLength":1,"maxLength":500,"description":"可选退回意见，未填写为 null；批准与取消必须为 null。"}
+      }
+    },
+    "DecisionResult": {
+      "type":"object","additionalProperties":false,"required":["applied","review","publish_job"],"description":"处理决定的结果；重复相同决定 applied=false 并返回既有资源。",
+      "properties":{
+        "applied":{"type":"boolean","description":"本次是否首次应用该决定。"},
+        "review":{"$ref":"#/$defs/ReviewRequest","description":"已持久化的审核状态。"},
+        "publish_job":{"anyOf":[{"$ref":"#/$defs/PublishJob"},{"type":"null"}],"description":"批准时唯一发布任务；退回/取消为 null。"}
+      }
+    },
+    "ReadinessRequest": {
+      "type":"object","additionalProperties":false,"required":["workspace_id","target_account_id"],"description":"对指定账号执行只读能力和身份检查，不投稿。",
+      "properties":{
+        "workspace_id":{"$ref":"#/$defs/Id","description":"工作区 ID。"},
+        "target_account_id":{"$ref":"#/$defs/OpaqueId","description":"待核对目标账号。"}
+      }
+    },
+    "ReadinessReport": {
+      "type":"object","additionalProperties":false,"required":["status","verified_account_id","capabilities","checked_at","error"],"description":"适配器对真实依赖的只读检查结果，不表示已完成真实投稿验收。",
+      "properties":{
+        "status":{"type":"string","enum":["READY","BLOCKED","UNSUPPORTED"],"description":"当前可用、需人工处理或能力不足。"},
+        "verified_account_id":{"anyOf":[{"$ref":"#/$defs/OpaqueId"},{"type":"null"}],"description":"实际登录账号，不能从页面昵称猜测；未知为 null。"},
+        "capabilities":{"type":"array","uniqueItems":true,"items":{"type":"string","enum":["image_text","ordered_images","exact_account","visibility","ai_label","final_submit","receipt_lookup"]},"description":"已知具备的能力集合；READY 必须包含本期全部七项。"},
+        "checked_at":{"$ref":"#/$defs/Timestamp","description":"本次检查时间。"},
+        "error":{"anyOf":[{"$ref":"#/$defs/ContractError"},{"type":"null"}],"description":"阻塞或不支持的安全诊断；正常时为 null。"}
+      }
+    },
+    "Evidence": {
+      "type":"object","additionalProperties":false,"required":["kind","reference","observed_at"],"description":"受控证据引用；证据内容不直接向模型暴露凭据或整页个人信息。",
+      "properties":{
+        "kind":{"type":"string","enum":["platform_response","creator_listing","operator_confirmation"],"description":"平台受理结果、创作者作品列表、授权运营者的明确核对。"},
+        "reference":{"type":"string","minLength":1,"maxLength":256,"description":"受控证据记录标识，不是任意本地文件路径。"},
+        "observed_at":{"$ref":"#/$defs/Timestamp","description":"核对发生时间。"}
+      }
+    },
+    "PublishObservation": {
+      "type":"object","additionalProperties":false,"required":["state","verified_account_id","platform_item_id","platform_url","evidence","error"],"description":"投稿适配器的可核对结果；平台字段按原值保留，未知不得编造。",
+      "properties":{
+        "state":{"type":"string","enum":["NOT_SUBMITTED","SUBMITTED","PUBLISHED","RESULT_UNKNOWN","REJECTED"],"description":"明确未提交、已受理、已发布、无法确定是否受理或平台明确拒绝。"},
+        "verified_account_id":{"anyOf":[{"$ref":"#/$defs/OpaqueId"},{"type":"null"}],"description":"结果所属实际账号，不可从请求原样回填伪装核验。"},
+        "platform_item_id":{"anyOf":[{"$ref":"#/$defs/OpaqueId"},{"type":"null"}],"description":"平台作品 ID；未知为 null。"},
+        "platform_url":{"type":["string","null"],"format":"uri","pattern":"^https://","maxLength":2048,"description":"已核对作品链接；未知为 null。"},
+        "evidence":{"type":"array","maxItems":10,"items":{"$ref":"#/$defs/Evidence"},"description":"支撑状态的证据引用。SUBMITTED/PUBLISHED/REJECTED 必须有证据。"},
+        "error":{"anyOf":[{"$ref":"#/$defs/ContractError"},{"type":"null"}],"description":"错误或阻塞诊断；无则为 null。"}
+      }
+    },
+    "AuditEvent": {
+      "type":"object","additionalProperties":false,"required":["event_id","workspace_id","sequence","resource_type","resource_id","event_type","occurred_at","trace_id"],"description":"工作区内单调序号的持久化事件索引；用于查询和诊断，不要求额外 SSE 或消息总线。",
+      "properties":{
+        "event_id":{"$ref":"#/$defs/Id","description":"事件 ID。"},
+        "workspace_id":{"$ref":"#/$defs/Id","description":"所属工作区。"},
+        "sequence":{"type":"integer","minimum":1,"description":"工作区内递增序号，允许有间隙，不承诺跨工作区排序。"},
+        "resource_type":{"type":"string","enum":["draft","review","publish_job"],"description":"事件关联的资源类型。"},
+        "resource_id":{"$ref":"#/$defs/Id","description":"对应资源 ID。"},
+        "event_type":{"type":"string","enum":["draft.created","draft.revised","review.requested","review.decided","review.expired","publish.queued","publish.state_changed","notification.state_changed"],"description":"稳定事件类型；有效组合见共享契约说明。"},
+        "occurred_at":{"$ref":"#/$defs/Timestamp","description":"服务端记录的发生时间。"},
+        "trace_id":{"$ref":"#/$defs/Id","description":"关联一次业务操作的诊断 ID。"}
+      }
+    }
+  }
+}
