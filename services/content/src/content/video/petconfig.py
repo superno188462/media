@@ -14,6 +14,7 @@ from pathlib import Path
 
 from . import pet as pet_mod
 from . import petclip as clip_mod
+from . import petstate as state_mod
 
 
 class ConfigError(RuntimeError):
@@ -45,6 +46,12 @@ class PetConfig:
     protected_zones: list[tuple[int, int, int, int]] = field(
         default_factory=lambda: [(300, 150, 1320, 720), (300, 880, 1320, 160)]
     )
+    #: 动作集合：名字 -> {weight, duration}
+    actions: dict = field(default_factory=dict)
+    #: 抓取用的手部素材；为空则不画手
+    hand: str = ""
+    #: 被拖走时用的动作名
+    grab_action: str = state_mod.GRAB_ACTION
 
     def __post_init__(self) -> None:
         if self.source not in clip_mod.SOURCES:
@@ -95,10 +102,21 @@ class PetConfig:
         wander = raw.get("wander_area", (0.36, 0.09, 0.58, 0.89))
         zones = raw.get("protected_zones") or [(300, 150, 1320, 720), (300, 880, 1320, 160)]
 
+        hand_raw = str(raw.get("hand", "") or "")
+        hand_path = ""
+        if hand_raw:
+            candidate = Path(hand_raw)
+            if not candidate.is_absolute() and base_dir is not None:
+                candidate = (base_dir / candidate).resolve()
+            hand_path = str(candidate)
+
         return cls(
             enabled=bool(raw.get("enabled", True)),
             source=str(raw.get("source", clip_mod.SOURCE_FLIPBOOK)),
             clips=resolved,
+            actions=dict(raw.get("actions") or {}),
+            hand=hand_path,
+            grab_action=str(raw.get("grab_action", state_mod.GRAB_ACTION)),
             clip_fps=int(raw.get("clip_fps", clip_mod.DEFAULT_CLIP_FPS)),
             crossfade=float(raw.get("crossfade", clip_mod.DEFAULT_CROSSFADE)),
             size=int(raw.get("size", 420)),
@@ -140,6 +158,17 @@ class PetConfig:
             crossfade=self.crossfade, height=self.size,
         )
 
+    def action_specs(self) -> dict:
+        """解析动作集合，自动去掉没有素材的动作。"""
+        specs = state_mod.parse_specs(self.actions or None)
+        available = set(self.clips)
+        missing = [name for name in specs if name not in available]
+        for name in missing:
+            specs.pop(name, None)
+        if "idle" not in specs:
+            raise ConfigError(f"动作集合缺少有素材的 idle；现有素材 {sorted(available)}")
+        return specs
+
     def to_dict(self) -> dict:
         """回写成配置结构，供前台页面读取当前值。"""
         return {
@@ -153,4 +182,7 @@ class PetConfig:
             "trigger_ratio": self.trigger_ratio,
             "wander_area": list(self.wander_area),
             "protected_zones": [list(z) for z in self.protected_zones],
+            "actions": dict(self.actions),
+            "hand": self.hand,
+            "grab_action": self.grab_action,
         }

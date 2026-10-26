@@ -46,6 +46,7 @@ from content.video import motion as motion_tool  # noqa: E402
 from content.video import composite  # noqa: E402
 from content.video import pet as pet_mod  # noqa: E402
 from content.video import petconfig  # noqa: E402
+from content.video import petstate  # noqa: E402
 
 #: 渲染中间产物不放 .local：实测 ffmpeg 子进程写不进去。
 DEFAULT_WORK_DIR = _HERE.parents[1] / ".runtime" / "video"
@@ -202,24 +203,47 @@ def main() -> int:
         slots = planner.frames(sum(holds))
         pet_info = planner.summary(slots)
 
-        # 帧源按动作名构造；本轮只有 idle，所有屏共用一段连续动画
+        # 动作素材按名字加载；缺素材的动作在 action_specs() 里已被剔除
         try:
-            idle_clip = config.build_clip("idle")
-        except Exception as exc:  # noqa: BLE001
-            return fail("PET_CLIP_FAILED", f"{type(exc).__name__}: {exc}")
+            specs = config.action_specs()
+        except (petconfig.ConfigError, petstate.ActionError) as exc:
+            return fail("PET_CONFIG_INVALID", str(exc))
 
-        clips = [idle_clip] * len(storyboard.scenes)
+        action_clips: dict = {}
+        for name in specs:
+            try:
+                action_clips[name] = config.build_clip(name)
+            except Exception as exc:  # noqa: BLE001
+                return fail("PET_CLIP_FAILED", f"{name}: {type(exc).__name__}: {exc}")
+
+        # 被拖走时用 grab 动作；没有素材就退回 idle
+        grab = config.grab_action
+        if grab not in action_clips:
+            grab = "idle"
+
+        plan = petstate.plan_actions(
+            sum(holds), fps=args.fps, specs=specs,
+            drag_flags=[f.dragging for f in slots], seed=seed,
+            available=set(action_clips),
+        )
+        actions = [grab if f.dragging else a for a, f in zip(plan.actions, slots)]
+
         pet_info.update({
             "source": config.source,
-            "frame_count": getattr(idle_clip, "frame_count", 1),
+            "actions": plan.summary()["actions"],
+            "segments": plan.summary()["segments"],
             "clip_fps": config.clip_fps,
             "size": config.size,
+            "frames_available": {k: getattr(v, "frame_count", 1) for k, v in action_clips.items()},
+            "hand": bool(config.hand),
         })
 
         try:
             result = composite.compose_layers(
                 backgrounds, holds, Path(args.out),
-                pet_frames=slots, clips_by_scene=clips, sprite_height=config.size,
+                pet_frames=slots, actions=actions, action_clips=action_clips,
+                hand=Path(config.hand) if config.hand else None,
+                sprite_height=config.size,
                 audio=audio_path, fps=args.fps, transition_ms=transition_ms,
                 size=(width, height),
             )

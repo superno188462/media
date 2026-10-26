@@ -21,6 +21,12 @@ from . import pet as pet_mod
 DEFAULT_FPS = 30
 DEFAULT_CRF = 20
 
+#: 被拎起时角色上提的像素，制造"离地"感。
+LIFT_PX = 26
+
+#: 手部素材指尖落在角色顶部的比例：越大手越靠上，不遮脸。
+HAND_GRIP = 0.80
+
 
 @dataclass
 class LayerResult:
@@ -79,6 +85,9 @@ def compose_layers(
     *,
     clips_by_scene: list | None = None,
     pet_frames: list[pet_mod.PetFrame] | None = None,
+    actions: list[str] | None = None,
+    action_clips: dict | None = None,
+    hand: Path | None = None,
     sprite_height: int = 420,
     audio: Path | None = None,
     fps: int = DEFAULT_FPS,
@@ -116,6 +125,22 @@ def compose_layers(
     prepared = list(clips_by_scene or [None] * len(backgrounds))
     if len(prepared) != len(backgrounds):
         raise CompositeError("帧源数量与背景数量不一致")
+
+    if actions is not None and action_clips is None:
+        raise CompositeError("给了 actions 就必须给 action_clips")
+
+    hand_image = None
+    if hand is not None:
+        hand_path = Path(hand)
+        if hand_path.is_file():
+            with Image.open(hand_path) as opened:
+                hand_image = opened.convert("RGBA")
+            # 手按角色大小缩放，否则一张 520px 的手盖住 420px 的角色
+            target_h = max(1, round(sprite_height * 1.1))
+            scale = target_h / hand_image.height
+            hand_image = hand_image.resize(
+                (max(1, round(hand_image.width * scale)), target_h), Image.LANCZOS
+            )
 
     frame_count = max(1, round(total_ms / 1000 * fps))
     if pet_frames is not None and len(pet_frames) < frame_count:
@@ -166,10 +191,17 @@ def compose_layers(
             else:
                 first, second = prepared[current], None
 
-            if pet_frames is not None and (first is not None or second is not None):
+            if pet_frames is not None:
                 pose = pet_frames[frame_index]
-                # 帧源按全局时间取帧：动作连续，不会每屏重头播
-                for clip, layer_weight in ((first, 1.0 - weight), (second, weight)):
+                # 动作模式：整条时间轴共用一个动作状态机
+                if actions is not None and action_clips is not None:
+                    name = actions[frame_index] if frame_index < len(actions) else "idle"
+                    clip = action_clips.get(name) or action_clips.get("idle")
+                    layers = [(clip, 1.0)] if clip is not None else []
+                else:
+                    layers = [(first, 1.0 - weight), (second, weight)]
+
+                for clip, layer_weight in layers:
                     if clip is None or layer_weight <= 0.001:
                         continue
                     layer = clip.frame_at(t_ms)
@@ -181,7 +213,15 @@ def compose_layers(
                             lambda value, w=layer_weight: int(value * w)
                         )
                         rotated.putalpha(alpha)
-                    base.paste(rotated, (pose.x, pose.y), rotated)
+                    # 被拎起来时角色整体上提一点，才有"离地"的感觉
+                    draw_y = pose.y - (LIFT_PX if pose.dragging else 0)
+                    base.paste(rotated, (pose.x, draw_y), rotated)
+
+                # 被拎起来时，从上方伸一只手，抓在头顶/后颈而不是脸
+                if hand_image is not None and pose.dragging:
+                    hand_x = pose.x + (rotated.width - hand_image.width) // 2
+                    hand_y = draw_y - int(hand_image.height * HAND_GRIP)
+                    base.paste(hand_image, (hand_x, hand_y), hand_image)
 
             process.stdin.write(base.tobytes())
 
