@@ -1,0 +1,244 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "brand": "AI 运营实验",
+  "disclaimer": "本视频含 AI 生成内容",
+  "accent": "#2E6BD6",
+  "assets": {
+    "main": "D:/github/robot/services/content/assets/poses/main.png",
+    "point": "D:/github/robot/services/content/assets/poses/point.png",
+    "sleepy": "D:/github/robot/services/content/assets/poses/sleepy.png"
+  },
+  "scenes": [
+    {
+      "hold_ms": 4000,
+      "badge": "测试 01",
+      "pose": "main",
+      "caption": "这条讲一下，现在跑到哪一步了。",
+      "title_block": {
+        "title": "先说说进度",
+        "main": "创作与评论跑通",
+        "sub": "发布也接通了"
+      },
+      "layout": "headline",
+      "motion": "none",
+      "transition": "none"
+    },
+    {
+      "hold_ms": 4000,
+      "badge": "测试 01",
+      "pose": "point",
+      "caption": "图文和视频都能出，发布这一步也接上了。",
+      "card": {
+        "title": "创作",
+        "icon": "✍️",
+        "lines": [
+          {
+            "text": "图文",
+            "sub": "选题 出图 组稿 送审 · 已真实发布",
+            "state": "normal",
+            "index": "✓"
+          },
+          {
+            "text": "视频",
+            "sub": "分镜 配音 渲染 合成 · 能出片",
+            "state": "normal",
+            "index": "✓"
+          },
+          {
+            "text": "发布",
+            "sub": "图文走动态，视频走投稿 · 已接通",
+            "state": "normal",
+            "index": "✓"
+          }
+        ]
+      },
+      "layout": "card",
+      "motion": "none",
+      "transition": "none"
+    },
+    {
+      "hold_ms": 4000,
+      "badge": "测试 01",
+      "pose": "main",
+      "caption": "评论的规则写好了，但还没接自动化。",
+      "card": {
+        "title": "评论",
+        "icon": "💬",
+        "lines": [
+          {
+            "text": "自动判断要不要回",
+            "sub": "不确定就不回",
+            "state": "normal",
+            "index": "1"
+          },
+          {
+            "text": "每小时 20 条额度",
+            "sub": "跑起来时的上限",
+            "state": "normal",
+            "index": "2"
+          },
+          {
+            "text": "还没接自动化",
+            "sub": "现在得手动跑一次",
+            "state": "pending",
+            "index": "3"
+          }
+        ]
+      },
+      "layout": "card",
+      "motion": "none",
+      "transition": "none"
+    },
+    {
+      "hold_ms": 4000,
+      "badge": "测试 01",
+      "pose": "sleepy",
+      "caption": "评论区留一句，我把它当测试集用。",
+      "card": {
+        "title": "当测试集用",
+        "icon": "🧪",
+        "lines": [
+          {
+            "text": "真实评论长什么样",
+            "sub": "我没法凭空造",
+            "state": "pending",
+            "index": "1"
+          },
+          {
+            "text": "你留的每一句都算样本",
+            "state": "normal",
+            "index": "2"
+          },
+          {
+            "text": "我会手动跑一遍来回",
+            "state": "active",
+            "index": "3"
+          }
+        ],
+        "footer": "不是开测试，是攒样本"
+      },
+      "layout": "center_card",
+      "motion": "none",
+      "transition": "none"
+    },
+    {
+      "hold_ms": 4000,
+      "badge": "测试 01",
+      "pose": "sleepy",
+      "layout": "center_card",
+      "motion": "none",
+      "caption": "所以现在别指望它全自动。",
+      "card": {
+        "title": "现在这个阶段",
+        "icon": "🌱",
+        "lines": [
+          {
+            "text": "我也是边做边学",
+            "state": "normal",
+            "index": "1"
+          },
+          {
+            "text": "加功能时可能出 bug",
+            "sub": "出 bug 时原本能用的会暂时不好使",
+            "state": "active",
+            "index": "2"
+          },
+          {
+            "text": "真搞好了才跑自动化",
+            "state": "normal",
+            "index": "3"
+          },
+          {
+            "text": "完整之后拆成多服务",
+            "sub": "稳定性靠这个，不是靠单机扛",
+            "state": "normal",
+            "index": "4"
+          }
+        ],
+        "footer": "现在坏了就是坏了，我会修"
+      },
+      "transition": "none"
+    },
+    {
+      "hold_ms": 4000,
+      "badge": "测试 01",
+      "pose": "point",
+      "caption": "发布这一步，模型自己做不到，得人点通过。",
+      "card": {
+        "title": "审核",
+        "icon": "🔒",
+        "lines": [
+          {
+            "text": "飞书卡片里看全文",
+            "state": "normal",
+            "index": "1"
+          },
+          {
+            "text": "批准绑定版本和摘要",
+            "state": "active",
+            "index": "2"
+          },
+          {
+            "text": "模型没有发布接口",
+            "state": "normal",
+            "index": "3"
+          }
+        ]
+      },
+      "layout": "card",
+      "motion": "none",
+      "transition": "none"
+    },
+    {
+      "hold_ms": 4000,
+      "badge": "测试 01",
+      "pose": "main",
+      "caption": "工具都是现成的，B站这一环靠开源项目 bili-cli。",
+      "card": {
+        "title": "技术栈",
+        "icon": "🧱",
+        "lines": [
+          {
+            "text": "B站投稿与读取",
+            "sub": "bili-cli（MIT）",
+            "state": "active",
+            "index": "1"
+          },
+          {
+            "text": "Agent 运行时",
+            "sub": "DSH（MIT）",
+            "state": "normal",
+            "index": "2"
+          },
+          {
+            "text": "排版与合成",
+            "sub": "Playwright · FFmpeg · Pillow",
+            "state": "normal",
+            "index": "3"
+          },
+          {
+            "text": "出图与配音",
+            "sub": "豆包 Seedream · 豆包语音",
+            "state": "normal",
+            "index": "4"
+          }
+        ],
+        "footer": "开源项目打底，商业服务按量付费"
+      },
+      "layout": "center_card",
+      "motion": "none",
+      "transition": "none"
+    },
+    {
+      "hold_ms": 4000,
+      "badge": "测试 01",
+      "pose": "main",
+      "outro": "谢谢你看到这里",
+      "outro_sub": "评论区留一句，我把它当测试集",
+      "layout": "headline",
+      "motion": "none",
+      "transition": "none"
+    }
+  ]
+}

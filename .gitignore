@@ -19,3 +19,6 @@ services/**/.runtime/
 
 # bili-cli 上游是独立仓库，按 commit 拉取（见 services/bilibili/UPSTREAM.md）。
 services/bilibili/upstream/
+
+# 运行日志
+*.log
