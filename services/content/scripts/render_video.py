@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
 import sys
 from pathlib import Path
 
@@ -42,6 +43,8 @@ from content.video import (  # noqa: E402
     voice,
 )
 from content.video import motion as motion_tool  # noqa: E402
+from content.video import composite  # noqa: E402
+from content.video import pet as pet_mod  # noqa: E402
 
 #: 渲染中间产物不放 .local：实测 ffmpeg 子进程写不进去。
 DEFAULT_WORK_DIR = _HERE.parents[1] / ".runtime" / "video"
@@ -70,6 +73,10 @@ def main() -> int:
     parser.add_argument("--fps", type=int, default=30)
     parser.add_argument("--transition-ms", type=int, default=motion_tool.DEFAULT_TRANSITION_MS,
                         help="转场时长；0 表示无转场（硬切）")
+    parser.add_argument("--pet", action="store_true",
+                        help="角色独立运动：UI 静止，角色随机游走，压到 UI 会被拖走")
+    parser.add_argument("--seed", type=int, default=0,
+                        help="角色行为种子；0 表示按当前时间随机")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -157,22 +164,68 @@ def main() -> int:
     if storyboard.scenes and all(layout.resolve_transition(s) == "none" for s in storyboard.scenes):
         transition_ms = 0
 
-    try:
-        with PlaywrightRenderer() as renderer:
-            frames = renderer.render_all(storyboard, frames_dir)
-    except RendererError as exc:
-        return fail("RENDER_FAILED", str(exc))
-    except Exception as exc:  # noqa: BLE001
-        return fail("INTERNAL_ERROR", f"{type(exc).__name__}: {exc}")
+    pet_info: dict | None = None
 
-    try:
-        result = compose_motion(
-            frames, holds, Path(args.out), motions,
-            audio=audio_path, fps=args.fps, transition_ms=transition_ms,
-            size=(storyboard.width, storyboard.height),
+    if args.pet:
+        # 分层：背景不含角色，角色单独合成
+        try:
+            with PlaywrightRenderer() as renderer:
+                backgrounds = renderer.render_all(storyboard, frames_dir, hide_character=True)
+        except RendererError as exc:
+            return fail("RENDER_FAILED", str(exc))
+
+        width, height = storyboard.width, storyboard.height
+        stage = pet_mod.Rect(0, 0, width, height)
+        wander = pet_mod.Rect(
+            int(width * 0.36), int(height * 0.09),
+            int(width * 0.58), int(height * 0.89),
         )
-    except (ComposeError, motion_tool.MotionError) as exc:
-        return fail("COMPOSE_FAILED", str(exc))
+        # 受保护区覆盖两种卡片版式（左卡片 + 居中卡片）和字幕条
+        protected = [
+            pet_mod.Rect(300, 150, 1320, 720),     # 卡片带（含居中卡片）
+            pet_mod.Rect(300, 880, 1320, 160),     # 字幕区
+        ]
+        pet_height = 420
+        seed = args.seed or int(time.time()) % 1_000_000
+        planner = pet_mod.PetPlanner(
+            seed=seed, fps=args.fps, stage=stage,
+            pet_size=(pet_height, pet_height), wander=wander, protected=protected,
+        )
+        slots = planner.frames(sum(holds))
+        pet_info = planner.summary(slots)
+
+        sprites = []
+        # 角色是"页面级"的宠物：所有场景都保留，只随场景换姿势
+        for scene in storyboard.scenes:
+            asset = storyboard.assets.get(scene.pose, "") if scene.pose else ""
+            sprites.append(Path(asset) if asset and Path(asset).is_file() else None)
+
+        try:
+            result = composite.compose_layers(
+                backgrounds, holds, Path(args.out),
+                pet_frames=slots, sprites_by_scene=sprites, sprite_height=pet_height,
+                audio=audio_path, fps=args.fps, transition_ms=transition_ms,
+                size=(width, height),
+            )
+        except composite.CompositeError as exc:
+            return fail("COMPOSE_FAILED", str(exc))
+    else:
+        try:
+            with PlaywrightRenderer() as renderer:
+                frames = renderer.render_all(storyboard, frames_dir)
+        except RendererError as exc:
+            return fail("RENDER_FAILED", str(exc))
+        except Exception as exc:  # noqa: BLE001
+            return fail("INTERNAL_ERROR", f"{type(exc).__name__}: {exc}")
+
+        try:
+            result = compose_motion(
+                frames, holds, Path(args.out), motions,
+                audio=audio_path, fps=args.fps, transition_ms=transition_ms,
+                size=(storyboard.width, storyboard.height),
+            )
+        except (ComposeError, motion_tool.MotionError) as exc:
+            return fail("COMPOSE_FAILED", str(exc))
 
     keyframes: list[str] = []
     if args.keyframes > 0:
@@ -200,6 +253,7 @@ def main() -> int:
             "layouts": [s.layout for s in storyboard.scenes],
             "transition_ms": transition_ms,
             "design_notes": notes,
+            "pet": pet_info,
             "voices": voices_info,
             "keyframes": keyframes,
         },

@@ -235,7 +235,7 @@ def _title_block_html(block: dict) -> str:
     )
 
 
-def render_html(storyboard: Storyboard, scene: Scene) -> str:
+def render_html(storyboard: Storyboard, scene: Scene, *, hide_character: bool = False) -> str:
     """生成这一场的完整 HTML。"""
     css = BASE_CSS.replace("__FONT__", FONT_STACK)
 
@@ -267,7 +267,7 @@ def render_html(storyboard: Storyboard, scene: Scene) -> str:
     if scene.title_block:
         parts.append(_title_block_html(scene.title_block))
 
-    if scene.pose:
+    if scene.pose and not hide_character:
         asset = storyboard.assets.get(scene.pose, "")
         if asset and Path(asset).is_file():
             parts.append(

@@ -105,9 +105,16 @@ class PlaywrightRenderer:
         self._page.set_default_timeout(self.timeout_ms)
         return self._page
 
-    def render(self, storyboard: Storyboard, scene: Scene, out_path: Path) -> Path:
+    def render(
+        self,
+        storyboard: Storyboard,
+        scene: Scene,
+        out_path: Path,
+        *,
+        hide_character: bool = False,
+    ) -> Path:
         page = self._ensure_page(storyboard)
-        html = render_html(storyboard, scene)
+        html = render_html(storyboard, scene, hide_character=hide_character)
         page.set_content(html, wait_until="load")
         # 等字体与图片就绪，避免截到方框或空白
         page.evaluate(
@@ -122,11 +129,15 @@ class PlaywrightRenderer:
         page.screenshot(path=str(out_path), type="png")
         return out_path
 
-    def render_all(self, storyboard: Storyboard, out_dir: Path) -> list[Path]:
+    def render_all(
+        self, storyboard: Storyboard, out_dir: Path, *, hide_character: bool = False
+    ) -> list[Path]:
         """渲染所有场次，返回按顺序排列的图片路径。"""
         out_dir.mkdir(parents=True, exist_ok=True)
         frames: list[Path] = []
         for index, scene in enumerate(storyboard.scenes, 1):
             target = out_dir / f"scene_{index:03d}.png"
-            frames.append(self.render(storyboard, scene, target))
+            frames.append(
+                self.render(storyboard, scene, target, hide_character=hide_character)
+            )
         return frames
