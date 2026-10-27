@@ -105,11 +105,11 @@ def test_static_clip_always_returns_same_image(tmp_path):
     assert clip.frame_at(0) is clip.frame_at(99999)
 
 
-def test_video_clip_is_not_enabled_yet(tmp_path):
-    """视频帧源预留着；额度到位前必须明确报错，不能静默降级。"""
+def test_video_clip_rejects_missing_file(tmp_path):
+    """视频帧源已实现（Seedance 可用后接通）；文件缺失要明确报错。"""
     with pytest.raises(P.ClipError) as exc:
         P.VideoClip.load(tmp_path / "a.mp4")
-    assert "尚未启用" in str(exc.value)
+    assert "视频不存在" in str(exc.value)
 
 
 def test_build_clip_dispatch(tmp_path):

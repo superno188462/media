@@ -114,7 +114,7 @@ video.mp4
 | --- | --- | --- |
 | `flipbook` | 一目录 RGBA 帧，循环 + 相邻帧交叉淡化 | **当前使用** |
 | `static` | 单张静图 | 兜底 |
-| `video` | 视频抽帧（Vidu / 豆包 视频生成） | 预留，额度不可用 |
+| `video` | 从 mp4 抽帧 → 抠图 → 归一化（豆包 Seedance 产出） | **已接通** |
 
 ### VP-DATA-07 动作状态机
 
@@ -146,6 +146,28 @@ video.mp4
 
 优先级：`grab` > `walk` > 状态机选中的动作。
 被拎起来时若仍显示走路会明显穿帮，所以拖拽必须覆盖走路。
+
+### VP-DATA-09 视频生成（豆包 Seedance）
+
+角色动作也可以用**视频生成**产出：一次生成 4 秒连续动作，帧与帧天然连续，
+没有"逐帧生图的漂移"，因此不需要交叉淡化。
+
+| 项 | 值 |
+| --- | --- |
+| 接口 | `POST /api/v3/contents/generations/tasks`（**不是** Agent Plan 的 `/api/plan/v3`） |
+| 凭据 | `VOLC_VIDEO_API_KEY`（与生图/语音的 `VOLC_API_KEY` 是**两把不同的 key**） |
+| 模型 | `doubao-seedance-2-5-260628` |
+| 模式 | 异步：建任务拿 id → 轮询 → 下载 |
+| 参考图 | 支持 **data URI**，本地 PNG 直接传，不需要公网图床 |
+| 实测耗时 | 4 秒 720p 约 147 秒出片 |
+
+**两个接口约束（踩过）**：
+
+1. 传了 `first_frame` 就**不能再传 `ratio`**——官方会返回
+   `InvalidParameter.TaskTypeConstraint`，输出比例由首帧决定。
+2. `duration` 按秒计费，默认取最小值 4 秒。
+
+**关键优势**：视频帧连续，`crossfade` 可以设为 0，从根本上没有"变形感"。
 
 **素材规范见 [`assets/pet/README.md`](../../../services/content/assets/pet/README.md)**：
 同动作内画布尺寸必须完全一致、脚底对齐、水平居中，否则循环时会跳。
