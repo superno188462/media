@@ -210,8 +210,10 @@ def main() -> int:
         except (petconfig.ConfigError, petstate.ActionError) as exc:
             return fail("PET_CONFIG_INVALID", str(exc))
 
+        # 帧源要覆盖配置里的**所有**动作：walk / grab 不在权重表里，
+        # 但分别是"换位置"和"被拎起来"时用的，漏了就拿不到素材。
         action_clips: dict = {}
-        for name in specs:
+        for name in config.clips:
             try:
                 action_clips[name] = config.build_clip(name)
             except Exception as exc:  # noqa: BLE001
@@ -224,10 +226,16 @@ def main() -> int:
 
         plan = petstate.plan_actions(
             sum(holds), fps=args.fps, specs=specs,
-            drag_flags=[f.dragging for f in slots], seed=seed,
+            drag_flags=[f.dragging for f in slots],
+            move_flags=[f.moving for f in slots],
+            seed=seed,
             available=set(action_clips),
         )
-        actions = [grab if f.dragging else a for a, f in zip(plan.actions, slots)]
+        # 拖拽优先于走路：被拎起来时不该显示走路
+        actions = [
+            grab if f.dragging else a
+            for a, f in zip(plan.actions, slots)
+        ]
 
         pet_info.update({
             "source": config.source,

@@ -23,6 +23,9 @@ from dataclasses import dataclass, field
 #: 拖拽期间使用的动作名。素材缺失时退回 idle。
 GRAB_ACTION = "grab"
 
+#: 换位置期间使用的动作名。没有该素材时沿用状态机选中的动作。
+WALK_ACTION = "walk"
+
 #: 默认动作集合：权重越大出现越频繁。
 DEFAULT_ACTIONS = {
     "idle": {"weight": 4.0, "duration": [3000, 8000]},
@@ -102,6 +105,7 @@ def plan_actions(
     fps: int,
     specs: dict[str, ActionSpec],
     drag_flags: list[bool] | None = None,
+    move_flags: list[bool] | None = None,
     seed: int = 0,
     available: set[str] | None = None,
 ) -> ActionPlan:
@@ -152,11 +156,22 @@ def plan_actions(
 
     timeline.append((segment_start, current, count * frame_ms - segment_start))
 
+    # 换位置时优先播 walk；没有素材就保持状态机选的动作
+    if move_flags is not None and (available is None or WALK_ACTION in available):
+        if len(move_flags) != count:
+            raise ActionError(
+                f"移动标记有 {len(move_flags)} 帧，动作需要 {count} 帧"
+            )
+        for index, moving in enumerate(move_flags):
+            if moving:
+                actions[index] = WALK_ACTION
+
     if drag_flags is not None:
         if len(drag_flags) != count:
             raise ActionError(
                 f"拖拽标记有 {len(drag_flags)} 帧，动作需要 {count} 帧"
             )
+        # 拖拽优先级最高：覆盖 walk
         for index, dragging in enumerate(drag_flags):
             if dragging:
                 actions[index] = GRAB_ACTION

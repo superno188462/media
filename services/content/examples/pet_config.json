@@ -7,7 +7,8 @@
       "eat": "../assets/pet/eat",
       "sleep": "../assets/pet/sleep",
       "wave": "../assets/pet/wave",
-      "grab": "../assets/pet/grab"
+      "grab": "../assets/pet/grab",
+      "walk": "../assets/pet/walk"
     },
     "hand": "../assets/pet/hand.png",
     "grab_action": "grab",

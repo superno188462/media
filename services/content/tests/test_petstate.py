@@ -128,3 +128,45 @@ def test_summary_percentages_sum_to_about_100():
 def test_action_at_frame_clamps():
     plan = S.plan_actions(1000, fps=30, specs=specs(), seed=1)
     assert plan.action_at_frame(99999) == plan.actions[-1]
+
+
+# ------------------------------------------------------------------ 移动时的走路动作
+
+def test_move_frames_become_walk_when_available():
+    flags = [False] * 60 + [True] * 30 + [False] * 60
+    plan = S.plan_actions(
+        5000, fps=30, specs=specs(), seed=2,
+        move_flags=flags, available={"idle", "wave", "walk"},
+    )
+    assert plan.actions[60] == S.WALK_ACTION
+    assert plan.actions[89] == S.WALK_ACTION
+    assert plan.actions[59] != S.WALK_ACTION
+
+
+def test_move_frames_keep_action_without_walk_clip():
+    flags = [False] * 60 + [True] * 30 + [False] * 60
+    plan = S.plan_actions(
+        5000, fps=30, specs=specs(), seed=2,
+        move_flags=flags, available={"idle", "wave"},
+    )
+    assert S.WALK_ACTION not in plan.actions
+
+
+def test_drag_overrides_walk():
+    """被拎起来时不该显示走路。"""
+    move = [True] * 90
+    drag = [False] * 30 + [True] * 30 + [False] * 30
+    plan = S.plan_actions(
+        3000, fps=30, specs=specs(), seed=2,
+        move_flags=move, drag_flags=drag, available={"idle", "walk", "grab"},
+    )
+    assert plan.actions[40] == S.GRAB_ACTION
+    assert plan.actions[20] == S.WALK_ACTION
+
+
+def test_move_flags_length_mismatch_rejected():
+    with pytest.raises(S.ActionError):
+        S.plan_actions(
+            4000, fps=30, specs=specs(), seed=2,
+            move_flags=[True], available={"idle", "walk"},
+        )
